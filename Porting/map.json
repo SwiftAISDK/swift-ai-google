@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "package": "swift-ai-google",
+  "status": "coarse-import",
+  "upstream": [
+    {
+      "name": "@ai-sdk/google",
+      "implementation": [
+        "packages/google/src"
+      ],
+      "tests": [
+        "packages/google/src/convert-google-usage.test.ts",
+        "packages/google/src/convert-to-google-messages.test.ts",
+        "packages/google/src/download-tool-result-files.test.ts",
+        "packages/google/src/get-model-path.test.ts",
+        "packages/google/src/google-batch.test.ts",
+        "packages/google/src/google-decision.test.ts",
+        "packages/google/src/google-embedding-model.test.ts",
+        "packages/google/src/google-error.test.ts",
+        "packages/google/src/google-files.test.ts",
+        "packages/google/src/google-image-model.test.ts",
+        "packages/google/src/google-json-accumulator.test.ts",
+        "packages/google/src/google-language-model.test.ts",
+        "packages/google/src/google-model-capabilities.test.ts",
+        "packages/google/src/google-prepare-tools.test.ts",
+        "packages/google/src/google-provider.test.ts",
+        "packages/google/src/google-speech-input.test.ts",
+        "packages/google/src/google-speech-model.test.ts",
+        "packages/google/src/google-supported-file-url.test.ts",
+        "packages/google/src/google-video-model.test.ts",
+        "packages/google/src/interactions/build-google-interactions-stream-transform.test.ts",
+        "packages/google/src/interactions/convert-to-google-interactions-input.test.ts",
+        "packages/google/src/interactions/extract-google-interactions-sources.test.ts",
+        "packages/google/src/interactions/google-interactions-language-model.test.ts",
+        "packages/google/src/interactions/map-google-interactions-finish-reason.test.ts",
+        "packages/google/src/interactions/parse-google-interactions-outputs.test.ts",
+        "packages/google/src/interactions/poll-google-interactions.test.ts",
+        "packages/google/src/interactions/prepare-google-interactions-tools.test.ts",
+        "packages/google/src/interactions/stream-google-interactions.test.ts",
+        "packages/google/src/lazy-schemas.test.ts",
+        "packages/google/src/realtime/google-realtime-event-mapper.test.ts",
+        "packages/google/src/realtime/google-realtime-model.test.ts",
+        "packages/google/src/sanitize-response-json-schema.test.ts",
+        "packages/google/src/speech-translation/google-speech-translation-model.test.ts",
+        "packages/google/src/structured-output-with-tools.test.ts",
+        "packages/google/src/transcription/google-transcription-model.test.ts"
+      ]
+    }
+  ],
+  "swift": {
+    "sources": [
+      "Sources/SwiftAIGoogle/GoogleBatchLanguageModel.swift",
+      "Sources/SwiftAIGoogle/GoogleConfiguration.swift",
+      "Sources/SwiftAIGoogle/GoogleFileClient.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerateContentMetadata.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerateContentResultParsing.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerateContentSourceParsing.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerateContentStreamParsing.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerationOptions.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerativeAIProvider.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerativeLanguageModel.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerativeMediaModels.swift",
+      "Sources/SwiftAIGoogle/GoogleGenerativeMediaOptions.swift",
+      "Sources/SwiftAIGoogle/GoogleImageInputCapabilities.swift",
+      "Sources/SwiftAIGoogle/GoogleInteractionsMetadata.swift",
+      "Sources/SwiftAIGoogle/GoogleInteractionsModel.swift",
+      "Sources/SwiftAIGoogle/GoogleInteractionsRequest.swift",
+      "Sources/SwiftAIGoogle/GoogleInteractionsStreaming.swift",
+      "Sources/SwiftAIGoogle/GoogleModelCapabilities.swift",
+      "Sources/SwiftAIGoogle/GoogleSchemaConversion.swift",
+      "Sources/SwiftAIGoogle/GoogleToolPreparation.swift",
+      "Sources/SwiftAIGoogle/GoogleTools.swift"
+    ],
+    "tests": [
+      "Tests/SwiftAIGoogleTests/FixtureDownloadTransport.swift",
+      "Tests/SwiftAIGoogleTests/GoogleBatchUpstreamTests.swift",
+      "Tests/SwiftAIGoogleTests/GoogleGenerativeAIFilesAndStreamingTests.swift",
+      "Tests/SwiftAIGoogleTests/GoogleGenerativeAITests.swift",
+      "Tests/SwiftAIGoogleTests/GoogleGenerativeAIVideoAndInteractionsTests.swift",
+      "Tests/SwiftAIGoogleTests/TestSupport.swift"
+    ],
+    "resources": []
+  },
+  "differences": [
+    {
+      "kind": "native-adaptation",
+      "reason": "Preserve Swift async/await, Sendable, Foundation transport and existing documented gaps; see Docs/CoreV6Parity.md and PortingStatus.md."
+    }
+  ],
+  "reviewNote": "M6: Google runtime and its single-provider tests extracted. Shared Google/Vertex algorithms remain owned here; native configuration uses the core HTTP client. Upstream baselines, capabilities and deferred behavior are unchanged.",
+  "canonicalOnlyReferences": [],
+  "canonicalDirectory": "Packages/swift-ai-google"
+}

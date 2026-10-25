@@ -1,0 +1,22 @@
+[
+  {
+    "order": 24,
+    "providerID": "google.generative-ai",
+    "upstreamPackage": "@ai-sdk/google",
+    "factoryNames": [
+      "AIProviders.google"
+    ],
+    "capabilities": [
+      "language",
+      "embedding",
+      "image",
+      "speech",
+      "video",
+      "evaluation",
+      "decision"
+    ],
+    "files": true,
+    "skills": false,
+    "notes": "Google Generative AI's implemented Gemini language, embedding, image, TTS speech, Veo video, files, interactions, and agents surface was audited against upstream Google 4.0.105. The current pass adds the published 100-input embedding preflight limit. Imagen factories remain locally available for source compatibility after their removal from the current upstream package. Gemini 3.7 Flash normalizes `none` and `minimal` reasoning to the supported `low` thinking floor. Primitive JSON Schema enum/const values and local `$ref` expansion, including boolean-schema references, map to Gemini's OpenAPI-compatible wire form, while strict forced/named tools use `ANY` and strict automatic tools retain `VALIDATED`. Interactions forwards topK and seed while warning for unsupported penalties and agent-dropped settings; Files resumable uploads leave payload length to the transport. Generate and stream results surface Gemini `responseId`; multiple code-execution results retain their originating call ID; parallel unsigned function calls reuse an earlier signed standard call; and unknown future Gemini IDs default to the newest supported tool, thinking, file-search, and multimodal response capabilities while known legacy families stay conservative. Speech maps Gemini TTS generateContent requests with WAV-wrapped PCM by default, raw PCM opt-in, multi-speaker provider options, response sample-rate metadata, and upstream warnings. Gemini 3.5 unary/live transcription, Files URL recognition, recursive-tool behavior, and Gemini 2.5 penalty warnings remain deferred to a dedicated provider pass. Realtime/WebSocket speech translation and lifecycle events and JS ProviderV4 runtime helpers also remain gaps. The 4.0.64 pass adds JSON Schema `minItems` and `maxItems`, preserves caller function aliases, forwards file headers and cancellation, supplies a durable Batch V4 adapter with tool content and input-file metadata, and supports Interactions video plus processing-call/result request, response, stream, warning, and metadata handling. Final integration also round-trips Interactions response history, function and built-in tool items, reasoning items, compaction state, provider references, `mediaResolution`, and `systemInstruction` precedence; Google Batch rejects empty result keys and preserves thought signatures even when their associated text is empty. The 2026-09-20 pass adds lossless schema conversion, corrected block reasons, accumulated stream metadata and usage, exact image-count behavior, custom provider names, and a Gemini-backed Evaluation V4 adapter. The 2026-09-27 pass adds embedding provider-option slicing, image metadata, video offsets, code-execution replay, JSON Schema `$ref` URIs, and current TTS behavior. The 2026-10-04 pass reports Gemini image file/mask capabilities and retains speech usageMetadata. Gemini transcription and Google Realtime remain deferred. The 2026-10-11 pass adds collision-safe JSON response tools with application tools, incremental nested JSON parsing and real-tool/signature preservation, Gemini 3 native automatic selection, shared embedding dimensions and Decision V4. Batch downloads default to a configurable 64 MiB UTF-8 line limit. The 2026-10-18 pass: GenerateContent auto-continues long decodes with cumulative output budgets, summed per-hop usage and initialPromptTokenCount metadata. Checkpoint tokens support explicit resume. AUDIO output, explicit thinking precedence, dotted route IDs and background Interactions polling are supported."
+  }
+]

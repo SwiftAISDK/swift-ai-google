@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "package": "swift-ai-google",
+  "version": "1.0.0",
+  "releaseID": "modular-3",
+  "source": {
+    "commit": "7fc9b4cd72f8f83b75ba7eee2e38d37127539317",
+    "baseCommit": "7fc9b4cd72f8f83b75ba7eee2e38d37127539317",
+    "workingTree": false,
+    "inputsSHA256": "49b802ba4a30454f78c9886ab3114537ef659ab3e6db7775479b7351f6e3f0ab"
+  },
+  "dependencies": [
+    {
+      "package": "swift-ai-core",
+      "from": "1.1.0"
+    }
+  ],
+  "changes": [
+    {
+      "id": "remaining-package-extraction",
+      "notes": "Extract the existing runtime, typed settings and standalone tests from the compatibility aggregate. Preserve the reviewed npm baseline and existing capability/gap boundaries.",
+      "compatibility": "Initial independent Swift package version. Existing SwiftAISDK entry points remain in the development compatibility facade; no npm-version equivalence is implied."
+    }
+  ],
+  "canonicalDirectory": "Packages/swift-ai-google",
+  "upstream": [
+    {
+      "name": "@ai-sdk/google",
+      "reviewedVersion": "4.0.105",
+      "ledgerKind": "provider",
+      "evidence": "`AIProviders.google`, `GoogleGenerativeAIProvider`, `GoogleGenerativeAI.swift`, `GoogleGenerativeMediaModels.swift`, `GoogleGenerativeAITests.swift`, `GoogleGenerativeAIMediaAndToolsTests.swift`, `GoogleBatchLanguageModel`, `GoogleBatchUpstreamTests.swift`, `GoogleGenerativeAIVideoAndInteractionsTests.swift`",
+      "reviewStatus": "imported-reviewed-with-gaps",
+      "archiveIntegrity": "sha512-CTeWVshKJKilEWQwqrjHG6GYUE0f/BbeDDUtRestAoH9vEf0f1YariQYbu69fPJGa6itc0pMdqvHzTWqAVD1OA==",
+      "sourceRef": "npm:@ai-sdk/google@4.0.105",
+      "testRef": "682e2dd71456f14f9da33a1b983d1998c3a1184c",
+      "testRefRelationship": "inventory-snapshot-not-release-verified",
+      "contractFamilies": [],
+      "contractReview": "not-imported; inspect upstream declarations before extraction"
+    }
+  ],
+  "note": "Independent port. Imported test refs and contract review gaps retain their original status; export is not new upstream parity proof.",
+  "canonicalInputs": [
+    {
+      "canonicalPath": ".github/workflows/package-check.yml",
+      "sha256": "7ff448e130f7aed96c38accdf828b6d993997ebc5317358347e9a70a649e67ca"
+    },
+    {
+      "canonicalPath": "LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Package.swift",
+      "sha256": "5b31c10b450ff16259d44b0f320c27818b764080ce9d5b8dea47e05eb8f95f68"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Porting/map.json",
+      "sha256": "ceb8d9d45e17f1a74bb1a77a1c4640ddc389c864aea0a16e666019068be9cec3"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/README.md",
+      "sha256": "1d3106a1a57076035388942c7ec96426c525651c149db01c8dfecb077aea0a9b"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleBatchLanguageModel.swift",
+      "sha256": "577d357e490c79ae44e9ba952d831ee72f8e050a1ccccd7a5c7e3fa99b297520"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleConfiguration.swift",
+      "sha256": "7c2f4e86caedd9d1f5a926d56f282874450d95ca14aa6889c359b73fc728f4d2"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleFileClient.swift",
+      "sha256": "a9641711b22cfc23747f6bc5f0c4bd8cc00bb0e4d8fe817871433cc5eeef9a8e"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerateContentMetadata.swift",
+      "sha256": "df8dd4da66913740a248a5259bcbc2a49f00ac13b345ab7d9f2333a3ba1c92a0"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerateContentResultParsing.swift",
+      "sha256": "d38be14fa3beee586c6fdcd744316a358f85c6963efa36fb1760d756383336b6"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerateContentSourceParsing.swift",
+      "sha256": "1a47e18f9b450283c9bf45559ad41c569b8daaa615851a4e755d8ac2de71ef9e"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerateContentStreamParsing.swift",
+      "sha256": "76e27a3b11fa265830721a834abe1743331c84d46d6490489b2575c5394f84c3"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerationOptions.swift",
+      "sha256": "aa8b3eed3ddb83795e5cce1ac8abd5fce9c18381d958c95f326fc9e41a66805d"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeAIProvider.swift",
+      "sha256": "317e8fe44db1e55f85b62ca157358c2efabc9be82f87db92ca2d6932eb9f3c19"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeLanguageModel.swift",
+      "sha256": "9914941cade3eb3ec459c1f38fc69b2e7fad41a7bb1712bd856ca210919c8c0b"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeMediaModels.swift",
+      "sha256": "13237ad155c181aeb838882c0ce16b672169e68f97506276dea8215221e75a07"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeMediaOptions.swift",
+      "sha256": "70af2c6ae7b10ac593ba14f8b175a09a68ef97bc545b9bfd77484612e07ec200"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleImageInputCapabilities.swift",
+      "sha256": "2e9ce3eabcfb3b37d8de95c01856798635f2f0e97ef960e017b63b2fb40109d3"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleInteractionsMetadata.swift",
+      "sha256": "1a1f187c3305eae75572b064685093fb324f10112422f10b7dda7d82f8646796"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleInteractionsModel.swift",
+      "sha256": "0d30af1917c57f37c503c6a27ed6cc73a8cb0492a64498a978773279e2251af1"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleInteractionsRequest.swift",
+      "sha256": "cee838c4c7c9c3ae16b46ec490e6339765079e0ad32214716109817077d34053"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleInteractionsStreaming.swift",
+      "sha256": "c6fd0674a5187f4f5d5ccf469a028b3b1e5bfefdfa15abb0dba56ea3a6e8d255"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleModelCapabilities.swift",
+      "sha256": "f41949a763fc237eee90d8c20dafb3a2eccd7fc1865057ffe6bc07ab24ece6e2"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleSchemaConversion.swift",
+      "sha256": "1f0cf46f184b783db23cf782d95b4ba4659c3bf8379c65186f369389163da710"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleToolPreparation.swift",
+      "sha256": "2a95c1b4201019c388cedbb1538e9d9976a650eb5e88fad69a2c9fca900cf448"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleTools.swift",
+      "sha256": "f9a35526227383bb90fe4dc8dcf82cee0031383d7a471c2dccee2764733f4322"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/FixtureDownloadTransport.swift",
+      "sha256": "a0929d9eeff6ffc77e1698546c32e7997edfb5778e3d1cfc4537b37af5032f52"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/GoogleBatchUpstreamTests.swift",
+      "sha256": "05fe71008059bef4d53189db2cf33cf74a2f392c3a4eb41e0c191981fb9a5481"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/GoogleGenerativeAIFilesAndStreamingTests.swift",
+      "sha256": "5ba5da48e1063435eff80ab8a6c234d7e155f2da5d5cf7043b8b330e95f6d7d8"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/GoogleGenerativeAITests.swift",
+      "sha256": "8caa3f3108befd6735fa63dae314ff2b607ae19e1b0a5524e31be2905547fa5f"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/GoogleGenerativeAIVideoAndInteractionsTests.swift",
+      "sha256": "848b5d986850d10df556be4758ffe7f349ec8685e9d597d879b848d32178d808"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/TestSupport.swift",
+      "sha256": "aab2578755f62eb18846fea27d8f6f5fca0cd1b6daa32a49498a5a824d2ca0c0"
+    }
+  ]
+}
