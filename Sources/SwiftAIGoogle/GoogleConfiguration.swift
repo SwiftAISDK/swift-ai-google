@@ -5,6 +5,8 @@ import SwiftAIProviderUtilities
 
 public struct GoogleProviderSettings: Sendable {
     public var apiKey: String?
+    /// Resolves a fresh API key immediately before each provider request.
+    public var apiKeyProvider: (@Sendable () async throws -> String)?
     public var baseURL: String?
     public var headers: [String: String]
     public var queryParams: [String: String]
@@ -21,9 +23,11 @@ public struct GoogleProviderSettings: Sendable {
         transport: any AITransport = URLSessionTransport.shared,
         transformRequestBody: (@Sendable ([String: JSONValue]) -> [String: JSONValue])? = nil,
         batchResultDownloads: AIBatchResultDownloadSettings? = nil,
-        name: String? = nil
+        name: String? = nil,
+        apiKeyProvider: (@Sendable () async throws -> String)? = nil
     ) {
         self.apiKey = apiKey
+        self.apiKeyProvider = apiKeyProvider
         self.baseURL = baseURL
         self.headers = headers
         self.queryParams = queryParams

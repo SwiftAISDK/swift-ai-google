@@ -180,49 +180,24 @@ public func googleToolConfigWithProviderOptions(_ toolConfig: JSONValue?, option
 
 func googleThinkingConfig(for reasoning: String?, modelID: String, warnings: inout [AIWarning]) -> [String: JSONValue]? {
     guard let reasoning, reasoning != "provider-default" else { return nil }
-    if googleIsGemini3OrNewer(modelID), !modelID.lowercased().contains("gemini-3-pro-image") {
+    if googleIsGemini3OrNewer(modelID), !modelID.contains("gemini-3-pro-image") {
         let minimumThinkingLevel = googleMinimumThinkingLevelForGemini3Model(modelID)
-        if reasoning == "none" {
-            return ["thinkingLevel": .string(minimumThinkingLevel)]
-        }
-        let effortMap = [
-            "minimal": minimumThinkingLevel,
+        var effortMap = [
             "low": "low",
             "medium": "medium",
-            "high": "high",
-            "xhigh": "high",
-            "max": "high"
+            "high": "high"
         ]
-        guard let mapped = effortMap[reasoning] else {
-            warnings.append(AIWarning(type: "unsupported", feature: "reasoning", message: "reasoning \"\(reasoning)\" is not supported by this model."))
-            return nil
-        }
-        if mapped != reasoning {
-            warnings.append(AIWarning(
-                type: "compatibility",
-                feature: "reasoning",
-                message: "reasoning \"\(reasoning)\" is not directly supported by this model. mapped to effort \"\(mapped)\"."
-            ))
-        }
+        if minimumThinkingLevel == "minimal" { effortMap["minimal"] = "minimal" }
+        guard let mapped = mapReasoningToProviderEffort(reasoning: reasoning, effortMap: effortMap, warnings: &warnings) else { return nil }
         return ["thinkingLevel": .string(mapped)]
     }
 
-    if reasoning == "none" {
+    let minimumBudget = modelID.lowercased().contains("2.5-pro") ? 128 : 0
+    if reasoning == "none", minimumBudget == 0 {
         return ["thinkingBudget": .number(0)]
     }
-    let budgetPercentages: [String: Double] = [
-        "minimal": 0.02,
-        "low": 0.1,
-        "medium": 0.3,
-        "high": 0.6,
-        "xhigh": 0.9
-    ]
-    guard let percentage = budgetPercentages[reasoning] else {
-        warnings.append(AIWarning(type: "unsupported", feature: "reasoning", message: "reasoning \"\(reasoning)\" is not supported by this model."))
-        return nil
-    }
-    let maxThinkingTokens = googleMaxThinkingTokensForGemini25Model(modelID)
-    let budget = min(maxThinkingTokens, max(0, Int((65536 * percentage).rounded())))
+    guard let budget = mapReasoningToProviderBudget(reasoning: reasoning, maxOutputTokens: 65536,
+        maxReasoningBudget: googleMaxThinkingTokensForGemini25Model(modelID), minReasoningBudget: minimumBudget, warnings: &warnings) else { return nil }
     return ["thinkingBudget": .number(Double(budget))]
 }
 

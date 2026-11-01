@@ -216,6 +216,7 @@ public func googleGenerateContentMessageJSON(
     modelID: String,
     includeFunctionCallIDs: Bool = true,
     supportsGoogleCloudStorageToolResults: Bool = false,
+    providerOptionsNames: [String] = ["google"],
     warnings: inout [AIWarning]
 ) throws -> JSONValue {
     let role = message.role == .assistant ? "model" : "user"
@@ -246,6 +247,8 @@ public func googleGenerateContentMessageJSON(
             modelID: modelID,
             includeFunctionCallIDs: includeFunctionCallIDs,
             supportsGoogleCloudStorageToolResults: supportsGoogleCloudStorageToolResults,
+            videoMetadataEnabled: message.role == .user,
+            providerOptionsNames: providerOptionsNames,
             warnings: &warnings
         ))
     }
@@ -257,25 +260,38 @@ func googleGenerateContentParts(
     modelID: String,
     includeFunctionCallIDs: Bool = true,
     supportsGoogleCloudStorageToolResults: Bool = false,
+    videoMetadataEnabled: Bool = true,
+    providerOptionsNames: [String] = ["google"],
     warnings: inout [AIWarning]
 ) throws -> [JSONValue] {
+    func filePart(_ value: [String: JSONValue]) throws -> [JSONValue] {
+        var value = value
+        if videoMetadataEnabled, let metadata = try googleVideoMetadata(part.providerMetadata, providerOptionsNames: providerOptionsNames) {
+            value["videoMetadata"] = metadata
+        }
+        return [.object(value)]
+    }
     switch part {
     case let .text(text, _):
         return [.object(["text": .string(text)])]
     case let .reasoning(text, _):
         return [.object(["text": .string(text)])]
     case let .imageURL(url, _):
-        return [.object(["fileData": .object(["fileUri": .string(url)])])]
+        return try filePart(["fileData": .object(["fileUri": .string(url)])])
     case let .data(mimeType, data, _), let .file(mimeType, data, _, _):
         let resolvedMimeType = try resolveFullMediaType(mediaType: mimeType, data: data)
-        return [.object([
+        return try filePart([
             "inlineData": .object([
                 "mimeType": .string(resolvedMimeType),
                 "data": .string(data.base64EncodedString())
             ])
-        ])]
-    case let .providerReference(_, reference, _, _):
-        return [.object(["fileData": .object(["fileUri": .string((try? resolveProviderReference(reference, provider: "google")) ?? reference.values.first ?? "")])])]
+        ])
+    case let .providerReference(mimeType, reference, _, _):
+        var file: [String: JSONValue] = ["fileUri": .string((try? resolveProviderReference(reference, provider: "google")) ?? reference.values.first ?? "")]
+        if videoMetadataEnabled, try googleVideoMetadata(part.providerMetadata, providerOptionsNames: providerOptionsNames) != nil {
+            file["mimeType"] = .string(mimeType)
+        }
+        return try filePart(["fileData": .object(file)])
     case let .toolCall(call):
         return [googleGenerateContentToolCallPart(
             call,

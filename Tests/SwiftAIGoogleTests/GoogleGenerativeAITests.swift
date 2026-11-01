@@ -21,7 +21,7 @@ import Testing
     let request = try #require(await transport.requests().first)
     #expect(request.url.absoluteString == "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")
     #expect(request.headers["x-goog-api-key"] == "gemini-key")
-    #expect(request.headers["user-agent"] == "ai-sdk-google/4.0.105")
+    #expect(request.headers["user-agent"] == "ai-sdk-google/4.0.109")
     let body = try decodeJSONBody(try #require(request.body))
     #expect(body["contents"]?[0]?["role"]?.stringValue == "user")
 }
@@ -51,7 +51,7 @@ import Testing
 
     let request = try #require(await transport.requests().first)
     #expect(request.headers["x-goog-api-key"] == "gemini-key")
-    #expect(request.headers["user-agent"] == "CustomApp/1.0 ai-sdk-google/4.0.105")
+    #expect(request.headers["user-agent"] == "CustomApp/1.0 ai-sdk-google/4.0.109")
 }
 @Test func googleCustomXGoogAPIKeyOverridesConfiguredAPIKeyLikeUpstream() async throws {
     let transport = RecordingTransport(response: jsonResponse("""
@@ -231,7 +231,11 @@ import Testing
         var noneWarnings: [AIWarning] = []
         let none = googleThinkingConfig(for: "none", modelID: modelID, warnings: &noneWarnings)
         #expect(none?["thinkingLevel"]?.stringValue == "low")
-        #expect(noneWarnings.isEmpty)
+        #expect(noneWarnings.contains(AIWarning(
+            type: "compatibility",
+            feature: "reasoning",
+            message: "reasoning \"none\" is not directly supported by this model. mapped to effort \"low\"."
+        )))
 
         var minimalWarnings: [AIWarning] = []
         let minimal = googleThinkingConfig(for: "minimal", modelID: modelID, warnings: &minimalWarnings)

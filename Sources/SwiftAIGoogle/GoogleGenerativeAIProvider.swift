@@ -12,17 +12,18 @@ public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider,
     public init(configuration settings: GoogleProviderSettings) throws {
         providerID = settings.name ?? "google.generative-ai"
         let names = ["GOOGLE_GENERATIVE_AI_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"]
-        guard let key = settings.apiKey ?? environmentValue(names) else {
+        let credential = settings.apiKeyProvider.map(AIAsyncCredential.init)
+        guard let key = credential?.placeholder ?? settings.apiKey ?? environmentValue(names) else {
             throw AIError.missingAPIKey(provider: providerID, environmentVariables: names)
         }
-        var headers = settings.headers
+        var headers = normalizeHeaders(settings.headers)
         headers["x-goog-api-key"] = headers["x-goog-api-key"] ?? key
         if providerID == "google.generative-ai" {
-            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.105")
+            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.109")
         }
         let baseURL = withoutTrailingSlash(settings.baseURL ?? "https://generativelanguage.googleapis.com/v1beta")
         config = GoogleModelConfiguration(
-            http: AIProviderHTTPClient(providerID: providerID, headers: headers, transport: settings.transport,
+            http: AIProviderHTTPClient(providerID: providerID, headers: headers, transport: settings.transport, credentialResolver: credential,
                 url: { _, path in try providerURL("\(baseURL)\(path)", queryParams: settings.queryParams) }),
             baseURL: baseURL, transformRequestBody: settings.transformRequestBody,
             batchResultMaxLineBytes: settings.batchResultDownloads?.maxLineBytes

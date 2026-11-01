@@ -1,41 +1,48 @@
 {
   "schemaVersion": 1,
   "package": "swift-ai-google",
-  "version": "1.0.0",
-  "releaseID": "modular-3",
+  "version": "1.1.0",
+  "releaseID": "weekly-upstream-20261101",
   "source": {
-    "commit": "7fc9b4cd72f8f83b75ba7eee2e38d37127539317",
-    "baseCommit": "7fc9b4cd72f8f83b75ba7eee2e38d37127539317",
+    "commit": "ea057797494ab9bb66df8c6bfd8edc10245b20e7",
+    "baseCommit": "ea057797494ab9bb66df8c6bfd8edc10245b20e7",
     "workingTree": false,
-    "inputsSHA256": "49b802ba4a30454f78c9886ab3114537ef659ab3e6db7775479b7351f6e3f0ab"
+    "inputsSHA256": "b46f3e07b0a583d6fee81035987d74a06fc5c6109cbdf228144d1172d2c3676e"
   },
   "dependencies": [
     {
       "package": "swift-ai-core",
-      "from": "1.1.0"
+      "from": "1.2.0"
     }
   ],
   "changes": [
     {
-      "id": "remaining-package-extraction",
-      "notes": "Extract the existing runtime, typed settings and standalone tests from the compatibility aggregate. Preserve the reviewed npm baseline and existing capability/gap boundaries.",
-      "compatibility": "Initial independent Swift package version. Existing SwiftAISDK entry points remain in the development compatibility facade; no npm-version equivalence is implied."
+      "id": "weekly-upstream-20261101",
+      "notes": "User-file GoogleVideoMetadata Codable type and validated start/end/fps mapping on inline/hosted/provider-reference inputs with endpoint namespace precedence and gateway fallback. Close streamed continued JSON strings on final chunk, empty chunk and valueless string terminator. Map Gemini 3 none to the lowest level with compatibility warning; Gemini 2.5 Pro minimum reasoning budget128; max reasoning uses shared95-percent budget cap. Native apiKeyProvider refreshes HTTP authorization before each send/stream, including continuations, batches, file initiation/polls and Interactions. Reviewed upstream: @ai-sdk/google 4.0.105 to 4.0.109. Validation passed: node Scripts/test-packages.mjs (all 52 owning package suites and the compatibility facade); node Scripts/sdk.mjs generate --check; node --test Scripts/tests/*.test.cjs (27 passed); docs-site check and build (100 pages). Live provider calls were not run.",
+      "compatibility": "Minor release for additive native API; existing static settings and call sites remain compatible. Updated direct dependency minimums are recorded in the manifest. Existing documented JS/framework and native product gaps remain; version-delta review does not imply full parity or live-service testing. Explicit custom authentication skips an unused credential supplier, a deliberate native callback-order adaptation."
     }
   ],
   "canonicalDirectory": "Packages/swift-ai-google",
   "upstream": [
     {
       "name": "@ai-sdk/google",
-      "reviewedVersion": "4.0.105",
+      "reviewedVersion": "4.0.109",
       "ledgerKind": "provider",
-      "evidence": "`AIProviders.google`, `GoogleGenerativeAIProvider`, `GoogleGenerativeAI.swift`, `GoogleGenerativeMediaModels.swift`, `GoogleGenerativeAITests.swift`, `GoogleGenerativeAIMediaAndToolsTests.swift`, `GoogleBatchLanguageModel`, `GoogleBatchUpstreamTests.swift`, `GoogleGenerativeAIVideoAndInteractionsTests.swift`",
+      "evidence": "`AIProviders.google`, `GoogleGenerativeAIProvider`, `GoogleGenerativeAI.swift`, `GoogleGenerativeMediaModels.swift`, `GoogleGenerativeAITests.swift`, `GoogleGenerativeAIMediaAndToolsTests.swift`, `GoogleBatchLanguageModel`, `GoogleBatchUpstreamTests.swift`, `GoogleGenerativeAIVideoAndInteractionsTests.swift`; 2026-11-01 delta: Docs/WeeklyUpstreamAudit20261101.json",
       "reviewStatus": "imported-reviewed-with-gaps",
-      "archiveIntegrity": "sha512-CTeWVshKJKilEWQwqrjHG6GYUE0f/BbeDDUtRestAoH9vEf0f1YariQYbu69fPJGa6itc0pMdqvHzTWqAVD1OA==",
-      "sourceRef": "npm:@ai-sdk/google@4.0.105",
-      "testRef": "682e2dd71456f14f9da33a1b983d1998c3a1184c",
-      "testRefRelationship": "inventory-snapshot-not-release-verified",
-      "contractFamilies": [],
-      "contractReview": "not-imported; inspect upstream declarations before extraction"
+      "archiveIntegrity": "sha512-BZd6F2vI53t1xb1Qtzfr6zDkUR7unzmKpI3UhDp9TxDl+JLw2DLRiTGWBeaqLJEdjt5myS4yqzjIhI9cDC9bfw==",
+      "sourceRef": "npm:@ai-sdk/google@4.0.109",
+      "testRef": "9b603d36186b75e58d5479445a96c76f6e2d2700",
+      "testRefRelationship": "matching-release",
+      "contractFamilies": [
+        "EmbeddingModelV4",
+        "ImageModelV4",
+        "LanguageModelV4",
+        "ProviderV4",
+        "SpeechModelV4",
+        "TranscriptionModelV4"
+      ],
+      "contractReview": "2026-11-01: published declarations, source and exact matching-release changed tests reviewed; scoped dispositions and Swift translations are in Docs/WeeklyUpstreamAudit20261101.json. Existing broader product gaps remain; reviewed delta is not full-package parity."
     }
   ],
   "note": "Independent port. Imported test refs and contract review gaps retain their original status; export is not new upstream parity proof.",
@@ -54,7 +61,7 @@
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Porting/map.json",
-      "sha256": "ceb8d9d45e17f1a74bb1a77a1c4640ddc389c864aea0a16e666019068be9cec3"
+      "sha256": "175a4c182113bb8fee9e0a897cf1b42822bdbc91b17ed3b6751afa4bad597606"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/README.md",
@@ -66,7 +73,7 @@
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleConfiguration.swift",
-      "sha256": "7c2f4e86caedd9d1f5a926d56f282874450d95ca14aa6889c359b73fc728f4d2"
+      "sha256": "c00cbe546ea74caabb18fca9cc399c45c46bbaeb0ecadfcdb220aae0beafa54e"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleFileClient.swift",
@@ -82,7 +89,7 @@
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerateContentSourceParsing.swift",
-      "sha256": "1a47e18f9b450283c9bf45559ad41c569b8daaa615851a4e755d8ac2de71ef9e"
+      "sha256": "4e2cf3cdb92e17a8f9cfe8784b3950897dca19ac24c9c63b1f00230fe5963049"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerateContentStreamParsing.swift",
@@ -90,15 +97,15 @@
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerationOptions.swift",
-      "sha256": "aa8b3eed3ddb83795e5cce1ac8abd5fce9c18381d958c95f326fc9e41a66805d"
+      "sha256": "2ce9283e792aef1eb8533d14a772d8e1a0047b58b534723d9797e76595ad45fc"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeAIProvider.swift",
-      "sha256": "317e8fe44db1e55f85b62ca157358c2efabc9be82f87db92ca2d6932eb9f3c19"
+      "sha256": "003b754b19c18a5b7dc04d044ab452432f6ed1a3dfc38bcd0ae68e72af52fc3b"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeLanguageModel.swift",
-      "sha256": "9914941cade3eb3ec459c1f38fc69b2e7fad41a7bb1712bd856ca210919c8c0b"
+      "sha256": "e2de6481224245e46b923f300ea2ff3b7c432cf372f33cf0b219a595a697ab77"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleGenerativeMediaModels.swift",
@@ -145,6 +152,10 @@
       "sha256": "f9a35526227383bb90fe4dc8dcf82cee0031383d7a471c2dccee2764733f4322"
     },
     {
+      "canonicalPath": "Packages/swift-ai-google/Sources/SwiftAIGoogle/GoogleVideoMetadata.swift",
+      "sha256": "a813d7ff55d285297a36975c43758e2990be82323b144ec949f1ccb08c643754"
+    },
+    {
       "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/FixtureDownloadTransport.swift",
       "sha256": "a0929d9eeff6ffc77e1698546c32e7997edfb5778e3d1cfc4537b37af5032f52"
     },
@@ -158,7 +169,7 @@
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/GoogleGenerativeAITests.swift",
-      "sha256": "8caa3f3108befd6735fa63dae314ff2b607ae19e1b0a5524e31be2905547fa5f"
+      "sha256": "65df44cdc5a2029ca253f2bd448b7d902e8d36fec54c4c741ea93319d29c1ae4"
     },
     {
       "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/GoogleGenerativeAIVideoAndInteractionsTests.swift",
@@ -167,6 +178,10 @@
     {
       "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/TestSupport.swift",
       "sha256": "aab2578755f62eb18846fea27d8f6f5fca0cd1b6daa32a49498a5a824d2ca0c0"
+    },
+    {
+      "canonicalPath": "Packages/swift-ai-google/Tests/SwiftAIGoogleTests/Weekly20261101GoogleTests.swift",
+      "sha256": "20ae43f6923f99f12bd7b9d562d2030299332ba9d30b98971a1d82058e708989"
     }
   ]
 }

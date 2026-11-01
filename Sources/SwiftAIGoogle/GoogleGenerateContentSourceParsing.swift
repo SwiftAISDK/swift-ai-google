@@ -253,6 +253,7 @@ struct GoogleJSONResponseArgumentAccumulator {
             if let string = arg["stringValue"]?.stringValue, stringPaths.contains(path) {
                 let escaped = googleGenerateContentArguments(.string(string))
                 delta += String(escaped.dropFirst().dropLast())
+                if arg["willContinue"] != true, stringOpen { delta += "\""; stringOpen = false }
                 continue
             }
             let value: JSONValue
@@ -263,7 +264,11 @@ struct GoogleJSONResponseArgumentAccumulator {
             else if arg.objectValue?["nullValue"] != nil { value = .null }
             else if let supplied = arg["value"] { value = supplied }
             else {
-                guard !seenPaths.contains(segments.joined(separator: "/")), arg["willContinue"] != true else { continue }
+                if seenPaths.contains(segments.joined(separator: "/")) {
+                    if stringPaths.contains(path), arg["willContinue"] != true, stringOpen { delta += "\""; stringOpen = false }
+                    continue
+                }
+                guard arg["willContinue"] != true else { continue }
                 isEmptyContainer = true
                 value = isArrayTerminator ? .array([JSONValue]()) : .object([:])
             }

@@ -69,7 +69,8 @@
       "Sources/SwiftAIGoogle/GoogleModelCapabilities.swift",
       "Sources/SwiftAIGoogle/GoogleSchemaConversion.swift",
       "Sources/SwiftAIGoogle/GoogleToolPreparation.swift",
-      "Sources/SwiftAIGoogle/GoogleTools.swift"
+      "Sources/SwiftAIGoogle/GoogleTools.swift",
+      "Sources/SwiftAIGoogle/GoogleVideoMetadata.swift"
     ],
     "tests": [
       "Tests/SwiftAIGoogleTests/FixtureDownloadTransport.swift",
@@ -77,7 +78,8 @@
       "Tests/SwiftAIGoogleTests/GoogleGenerativeAIFilesAndStreamingTests.swift",
       "Tests/SwiftAIGoogleTests/GoogleGenerativeAITests.swift",
       "Tests/SwiftAIGoogleTests/GoogleGenerativeAIVideoAndInteractionsTests.swift",
-      "Tests/SwiftAIGoogleTests/TestSupport.swift"
+      "Tests/SwiftAIGoogleTests/TestSupport.swift",
+      "Tests/SwiftAIGoogleTests/Weekly20261101GoogleTests.swift"
     ],
     "resources": []
   },
@@ -87,7 +89,7 @@
       "reason": "Preserve Swift async/await, Sendable, Foundation transport and existing documented gaps; see Docs/CoreV6Parity.md and PortingStatus.md."
     }
   ],
-  "reviewNote": "M6: Google runtime and its single-provider tests extracted. Shared Google/Vertex algorithms remain owned here; native configuration uses the core HTTP client. Upstream baselines, capabilities and deferred behavior are unchanged.",
+  "reviewNote": "M6: Google runtime and its single-provider tests extracted. Shared Google/Vertex algorithms remain owned here; native configuration uses the core HTTP client. Upstream baselines, capabilities and deferred behavior are unchanged. 2026-11-01: reviewed @ai-sdk/google 4.0.105 -> 4.0.109 archives and release-matched tests (612be2311464804d1e4897afacbf8f3fc2f6d9e3 -> 9b603d36186b75e58d5479445a96c76f6e2d2700). Ported changed convert-to-google-messages, google-json-accumulator and google-language-model test deltas in Weekly20261101GoogleTests: typed/validated video metadata and namespace precedence, final string closure, Gemini reasoning minimums and warnings. Async credential resolution covers HTTP continuations, files/batch/interactions and existing media paths; local rotation tests include generation, streaming and file polling. Model-catalog documentation declarations retain the native capability architecture; no native catalog API was invented. Existing realtime and speech-translation product gaps remain; JS resolver/type changes for these unexposed products are out of scope.",
   "canonicalOnlyReferences": [],
   "canonicalDirectory": "Packages/swift-ai-google"
 }
