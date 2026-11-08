@@ -19,7 +19,7 @@ public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider,
         var headers = normalizeHeaders(settings.headers)
         headers["x-goog-api-key"] = headers["x-goog-api-key"] ?? key
         if providerID == "google.generative-ai" {
-            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.109")
+            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.114")
         }
         let baseURL = withoutTrailingSlash(settings.baseURL ?? "https://generativelanguage.googleapis.com/v1beta")
         config = GoogleModelConfiguration(
@@ -79,6 +79,11 @@ public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider,
 
     public func files() -> any AIFileClient {
         GoogleFileClient(providerID: config.providerID, config: config)
+    }
+
+    /// Gemini Live over a native WebSocket. Mint client secrets on a trusted server.
+    public func realtimeModel(_ modelID: String) -> GoogleRealtimeModel {
+        GoogleRealtimeModel(modelID: modelID, config: config)
     }
 
     public func embeddingModel(_ modelID: String) throws -> any EmbeddingModel {

@@ -21,10 +21,9 @@ public func googlePrepareGenerateContentOptions(
     var options = googleGenerateContentOptions(from: request.extraBody)
     if let toolChoice = request.toolChoice { options["toolChoice"] = toolChoice }
     let providerOptionsNames = isVertexProvider ? ["googleVertex", "vertex", "google"] : ["google"]
-    for name in providerOptionsNames {
-        guard let providerOptions = request.providerOptions[name]?.objectValue else { continue }
+    let resolved = try resolveProviderOptions(providerOptions: request.providerOptions, namespaces: providerOptionsNames, resolution: .first)
+    if let providerOptions = resolved.options {
         options.merge(providerOptions.filter { googleKnownLanguageProviderOptionKeys.contains($0.key) }) { _, providerValue in providerValue }
-        break
     }
 
     if let token = options["continuationToken"], token.stringValue == nil {

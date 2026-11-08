@@ -20,6 +20,7 @@
         "packages/google/src/google-files.test.ts",
         "packages/google/src/google-image-model.test.ts",
         "packages/google/src/google-json-accumulator.test.ts",
+        "packages/google/src/google-language-model-stream-order.test.ts",
         "packages/google/src/google-language-model.test.ts",
         "packages/google/src/google-model-capabilities.test.ts",
         "packages/google/src/google-prepare-tools.test.ts",
@@ -27,6 +28,7 @@
         "packages/google/src/google-speech-input.test.ts",
         "packages/google/src/google-speech-model.test.ts",
         "packages/google/src/google-supported-file-url.test.ts",
+        "packages/google/src/google-tool-choice-none.test.ts",
         "packages/google/src/google-video-model.test.ts",
         "packages/google/src/interactions/build-google-interactions-stream-transform.test.ts",
         "packages/google/src/interactions/convert-to-google-interactions-input.test.ts",
@@ -66,7 +68,9 @@
       "Sources/SwiftAIGoogle/GoogleInteractionsModel.swift",
       "Sources/SwiftAIGoogle/GoogleInteractionsRequest.swift",
       "Sources/SwiftAIGoogle/GoogleInteractionsStreaming.swift",
+      "Sources/SwiftAIGoogle/GoogleInteractionsTools.swift",
       "Sources/SwiftAIGoogle/GoogleModelCapabilities.swift",
+      "Sources/SwiftAIGoogle/GoogleRealtimeModel.swift",
       "Sources/SwiftAIGoogle/GoogleSchemaConversion.swift",
       "Sources/SwiftAIGoogle/GoogleToolPreparation.swift",
       "Sources/SwiftAIGoogle/GoogleTools.swift",
@@ -79,7 +83,9 @@
       "Tests/SwiftAIGoogleTests/GoogleGenerativeAITests.swift",
       "Tests/SwiftAIGoogleTests/GoogleGenerativeAIVideoAndInteractionsTests.swift",
       "Tests/SwiftAIGoogleTests/TestSupport.swift",
-      "Tests/SwiftAIGoogleTests/Weekly20261101GoogleTests.swift"
+      "Tests/SwiftAIGoogleTests/Weekly20261101GoogleTests.swift",
+      "Tests/SwiftAIGoogleTests/Weekly20261108GoogleTests.swift",
+      "Tests/SwiftAIGoogleTests/Weekly20261108RealtimeIntegrationTests.swift"
     ],
     "resources": []
   },
@@ -89,7 +95,7 @@
       "reason": "Preserve Swift async/await, Sendable, Foundation transport and existing documented gaps; see Docs/CoreV6Parity.md and PortingStatus.md."
     }
   ],
-  "reviewNote": "M6: Google runtime and its single-provider tests extracted. Shared Google/Vertex algorithms remain owned here; native configuration uses the core HTTP client. Upstream baselines, capabilities and deferred behavior are unchanged. 2026-11-01: reviewed @ai-sdk/google 4.0.105 -> 4.0.109 archives and release-matched tests (612be2311464804d1e4897afacbf8f3fc2f6d9e3 -> 9b603d36186b75e58d5479445a96c76f6e2d2700). Ported changed convert-to-google-messages, google-json-accumulator and google-language-model test deltas in Weekly20261101GoogleTests: typed/validated video metadata and namespace precedence, final string closure, Gemini reasoning minimums and warnings. Async credential resolution covers HTTP continuations, files/batch/interactions and existing media paths; local rotation tests include generation, streaming and file polling. Model-catalog documentation declarations retain the native capability architecture; no native catalog API was invented. Existing realtime and speech-translation product gaps remain; JS resolver/type changes for these unexposed products are out of scope.",
+  "reviewNote": "M6: Google runtime and its single-provider tests extracted. Shared Google/Vertex algorithms remain owned here; native configuration uses the core HTTP client. Upstream baselines, capabilities and deferred behavior are unchanged. 2026-11-01: reviewed @ai-sdk/google 4.0.105 -> 4.0.109 archives and release-matched tests (612be2311464804d1e4897afacbf8f3fc2f6d9e3 -> 9b603d36186b75e58d5479445a96c76f6e2d2700). Ported changed convert-to-google-messages, google-json-accumulator and google-language-model test deltas in Weekly20261101GoogleTests: typed/validated video metadata and namespace precedence, final string closure, Gemini reasoning minimums and warnings. Async credential resolution covers HTTP continuations, files/batch/interactions and existing media paths; local rotation tests include generation, streaming and file polling. Model-catalog documentation declarations retain the native capability architecture; no native catalog API was invented. Existing realtime and speech-translation product gaps remain; JS resolver/type changes for these unexposed products are out of scope. 2026-11-08: reviewed @ai-sdk/google 4.0.109 -> 4.0.114 published source/declarations and matching-release tests. Ported signed empty text/reasoning replay, streamed text/tool order and terminal partial calls, sparse-index bounds, RPC status retryability, first namespace resolution, provider tool NONE filtering, Interactions labels/tool mapping and speech language. Added native Gemini Live client-secret/server WebSocket codec with per-session turn/transcript state and same-frame usage. Native JSONValue excludes JS cycles/BigInt/toJSON; unchanged browser capture/playback, separate Google transcription and speech translation remain gaps. No complete/live parity claim.",
   "canonicalOnlyReferences": [],
   "canonicalDirectory": "Packages/swift-ai-google"
 }

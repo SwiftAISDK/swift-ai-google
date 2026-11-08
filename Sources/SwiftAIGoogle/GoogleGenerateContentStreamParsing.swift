@@ -121,7 +121,7 @@ struct GoogleGenerateContentStreamState {
                 message: error["message"]?.stringValue ?? "Google stream error",
                 type: error["status"]?.stringValue,
                 code: error["code"] == .null ? nil : error["code"],
-                statusCode: error["code"]?.intValue,
+                statusCode: error["code"]?.intValue ?? googleStatusHTTPCode(error["status"]?.stringValue),
                 data: error
             )))
             return parts
@@ -189,7 +189,12 @@ struct GoogleGenerateContentStreamState {
             }
             if let text = contentPart["text"]?.stringValue {
                 let metadata = googleThoughtSignatureProviderMetadata(from: contentPart)
-                if contentPart["thought"]?.boolValue == true {
+                if text.isEmpty && !metadata.isEmpty && currentTextID == nil {
+                    if let id = currentReasoningID { parts.append(.reasoningEnd(id: id)); currentReasoningID = nil }
+                    let id = String(blockCounter); blockCounter += 1
+                    if contentPart["thought"] == true { parts += [.reasoningStart(id: id, providerMetadata: metadata), .reasoningDeltaPart(id: id, delta: "", providerMetadata: metadata), .reasoningEnd(id: id)] }
+                    else { parts += [.textStart(id: id, providerMetadata: metadata), .textDeltaPart(id: id, delta: "", providerMetadata: metadata), .textEnd(id: id)] }
+                } else if contentPart["thought"]?.boolValue == true {
                     if !text.isEmpty {
                         if let id = currentTextID {
                             parts.append(.textEnd(id: id))
@@ -241,6 +246,13 @@ struct GoogleGenerateContentStreamState {
                 }
             }
             if let functionCall = contentPart["functionCall"] {
+                let complete = functionCall["partialArgs"] == nil && functionCall["name"] != nil && functionCall["willContinue"] != true
+                let terminalPartial = functionCall["name"] == nil && functionCall["args"] == nil && functionCall["partialArgs"] == nil && functionCall["willContinue"] == nil
+                let finishedPartial = functionCall["partialArgs"]?.arrayValue.map { partial in functionCall["willContinue"] != true && !partial.contains { $0["willContinue"] == true } } ?? false
+                if complete || terminalPartial || finishedPartial {
+                    if let id = currentTextID { parts.append(.textEnd(id: id)); currentTextID = nil }
+                    if let id = currentReasoningID { parts.append(.reasoningEnd(id: id)); currentReasoningID = nil }
+                }
                 if jsonResponseConverter != nil {
                     if let id = currentTextID { parts.append(.textEnd(id: id)); currentTextID = nil }
                     if let id = currentReasoningID { parts.append(.reasoningEnd(id: id)); currentReasoningID = nil }
@@ -322,7 +334,6 @@ struct GoogleGenerateContentStreamState {
             parts.append(.streamStart(warnings: warnings))
         }
         let finishedToolParts = toolCalls.finishedParts()
-        parts.append(contentsOf: finishedToolParts)
         if let id = currentReasoningID {
             parts.append(.reasoningEnd(id: id))
         }
@@ -331,6 +342,7 @@ struct GoogleGenerateContentStreamState {
             parts.append(.textEnd(id: id))
         }
         currentTextID = nil
+        parts.append(contentsOf: finishedToolParts)
         let usageMetadata = googleAddUsageMetadata(continuedUsageMetadata, currentUsageMetadata)
         latestUsage = usageMetadata.map(googleGenerateContentUsage(fromUsageMetadata:))
         var google = latestProviderMetadata["google"]?.objectValue ?? [:]
@@ -440,6 +452,7 @@ public func googleStreamWithContinuation(
             break
         }
         if state == nil {
+            continuation.yield(.requestMetadata(.init(body: nextBody, headers: request.headers, url: opened.request.url.absoluteString)))
             state = GoogleGenerateContentStreamState(
                 response: httpResponseHead(from: opened.response, request: opened.request),
                 includeRawChunks: request.includeRawChunks,
@@ -496,4 +509,20 @@ private func googleContinuationStreamError(_ error: Error) -> LanguageStreamPart
             "error": body?["error"] ?? .null
         ])
     ))
+}
+func googleStatusHTTPCode(_ status: String?) -> Int? {
+    switch status {
+    case "CANCELLED": 499
+    case "INVALID_ARGUMENT", "FAILED_PRECONDITION", "OUT_OF_RANGE": 400
+    case "DEADLINE_EXCEEDED": 504
+    case "NOT_FOUND": 404
+    case "ALREADY_EXISTS", "ABORTED": 409
+    case "PERMISSION_DENIED": 403
+    case "UNAUTHENTICATED": 401
+    case "RESOURCE_EXHAUSTED": 429
+    case "UNIMPLEMENTED": 501
+    case "UNKNOWN", "INTERNAL", "DATA_LOSS": 500
+    case "UNAVAILABLE": 503
+    default: nil
+    }
 }

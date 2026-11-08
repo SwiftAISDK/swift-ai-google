@@ -10,6 +10,8 @@ public func googlePrepareTools(
     modelID: String,
     isVertexProvider: Bool
 ) throws -> GooglePreparedTools? {
+    let disabled = (toolChoice?["type"]?.stringValue ?? toolChoice?.stringValue) == "none"
+    let tools = disabled ? tools.filter { name, value in value["type"]?.stringValue != "provider" && !(value["id"]?.stringValue ?? name).hasPrefix("google.") } : tools
     guard !tools.isEmpty else { return nil }
 
     let capabilities = googleModelCapabilities(for: modelID)

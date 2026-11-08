@@ -120,6 +120,7 @@ struct GoogleGenerateContentToolCallBuffer {
 struct GoogleGenerateContentStreamingToolCalls {
     private var buffers: [Int: GoogleGenerateContentToolCallBuffer] = [:]
     private var activeIndex: Int = 0
+    private var nextIndex: Int = 0
     private let jsonResponseToolName: String?
 
     init(jsonResponseToolName: String? = nil) {
@@ -128,12 +129,18 @@ struct GoogleGenerateContentStreamingToolCalls {
 
     mutating func apply(functionCall: JSONValue, rawValue: JSONValue) -> [LanguageStreamPart] {
         if functionCall.objectValue?.isEmpty == true {
-            return []
+            if var buffer = buffers[activeIndex] {
+                if let metadata = googleThoughtSignatureProviderMetadata(from: rawValue)["google"] { buffer.providerMetadata["google"] = metadata }
+                buffer.rawValue = rawValue
+                buffers[activeIndex] = buffer
+            }
+            return finish(index: activeIndex)
         }
 
         let index: Int
         if functionCall["name"]?.stringValue != nil {
-            index = buffers.isEmpty ? 0 : activeIndex + (buffers[activeIndex]?.name == nil ? 0 : 1)
+            index = nextIndex
+            nextIndex += 1
             activeIndex = index
         } else {
             index = activeIndex
@@ -160,7 +167,7 @@ struct GoogleGenerateContentStreamingToolCalls {
         if let args = functionCall["args"] {
             let arguments = buffer.name == jsonResponseToolName ? (args.stringValue ?? googleGenerateContentArguments(args)) : googleGenerateContentArguments(args)
             buffer.arguments = args.objectValue ?? [:]
-            if buffer.name == jsonResponseToolName { buffer.responseArguments = arguments }
+            buffer.responseArguments = args.stringValue ?? arguments
             emitted.append(.toolCallDelta(id: buffer.id, name: buffer.name, argumentsDelta: arguments, index: index))
             if buffer.inputStarted {
                 emitted.append(.toolInputDelta(id: id, delta: arguments, providerMetadata: buffer.providerMetadata))
@@ -194,18 +201,25 @@ struct GoogleGenerateContentStreamingToolCalls {
         }
 
         buffers[index] = buffer
+        let partialArgs = functionCall["partialArgs"]?.arrayValue
+        if functionCall["willContinue"] != true,
+           partialArgs?.contains(where: { $0["willContinue"] == true }) != true {
+            emitted.append(contentsOf: finish(index: index))
+        }
         return emitted
     }
 
     mutating func finishedParts() -> [LanguageStreamPart] {
+        buffers.keys.sorted().flatMap { finish(index: $0) }
+    }
+
+    private mutating func finish(index: Int) -> [LanguageStreamPart] {
         var parts: [LanguageStreamPart] = []
-        for index in buffers.keys.sorted() {
-            guard var buffer = buffers[index], let name = buffer.name else { continue }
+            guard var buffer = buffers.removeValue(forKey: index), let name = buffer.name else { return [] }
             let id = buffer.id ?? "tool-call-\(index)"
             if !buffer.inputStarted {
                 parts.append(.toolInputStart(id: id, name: name, providerMetadata: buffer.providerMetadata))
                 buffer.inputStarted = true
-                buffers[index] = buffer
             }
             if var accumulator = buffer.responseAccumulator {
                 let closing = accumulator.finish()
@@ -222,7 +236,6 @@ struct GoogleGenerateContentStreamingToolCalls {
                 providerMetadata: buffer.providerMetadata,
                 rawValue: buffer.rawValue
             )))
-        }
         return parts
     }
 }
@@ -237,6 +250,7 @@ struct GoogleJSONResponseArgumentAccumulator {
     }
     private var containers: [Container] = []
     private var stringOpen = false
+    private var arrayLengths: [String: Int] = [:]
     private var stringPaths: Set<String> = []
     private var seenPaths: Set<String> = []
     private(set) var jsonText = ""
@@ -250,6 +264,20 @@ struct GoogleJSONResponseArgumentAccumulator {
             guard path.hasPrefix("$."), path.count > 2 else { continue }
             let segments = Self.pathSegments(String(path.dropFirst(2)))
             guard let leaf = segments.last else { continue }
+            var nextLengths = arrayLengths
+            var prefix = ""
+            var contiguous = true
+            for segment in segments {
+                if segment.hasPrefix("[") {
+                    guard let index = Int(segment.dropFirst().dropLast()), index < Int.max else { contiguous = false; break }
+                    let count = nextLengths[prefix] ?? 0
+                    if index > count { contiguous = false; break }
+                    nextLengths[prefix] = max(count, index + 1)
+                }
+                prefix += "/" + segment
+            }
+            guard contiguous else { continue }
+            arrayLengths = nextLengths
             if let string = arg["stringValue"]?.stringValue, stringPaths.contains(path) {
                 let escaped = googleGenerateContentArguments(.string(string))
                 delta += String(escaped.dropFirst().dropLast())
@@ -272,6 +300,12 @@ struct GoogleJSONResponseArgumentAccumulator {
                 isEmptyContainer = true
                 value = isArrayTerminator ? .array([JSONValue]()) : .object([:])
             }
+            // Replacing a parent (including null) also replaces its array bounds.
+            // Do this only after an actual value has been accepted, not for an
+            // incomplete path declaration.
+            let replacedPrefix = segments.map { "/" + $0 }.joined()
+            arrayLengths = arrayLengths.filter { !$0.key.hasPrefix(replacedPrefix + "/") && $0.key != replacedPrefix }
+            if let array = value.arrayValue { arrayLengths[replacedPrefix] = array.count }
             for depth in 1...segments.count { seenPaths.insert(segments.prefix(depth).joined(separator: "/")) }
             if stringOpen { delta += "\""; stringOpen = false }
             if containers.isEmpty { containers.append(Container(segment: "", isArray: false)); delta += "{" }

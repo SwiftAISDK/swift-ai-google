@@ -132,13 +132,7 @@ public func googlePrepareSpeechRequest(
             message: "Google Gemini TTS models do not support the `speed` option. It was ignored."
         ))
     }
-    if request.language != nil {
-        warnings.append(AIWarning(
-            type: "unsupported",
-            feature: "language",
-            message: "Google Gemini TTS models do not support the `language` option. Language is detected automatically from the input text."
-        ))
-    }
+
 
     var parts: [JSONValue]
     if usesStructuredSpeech {
@@ -248,11 +242,11 @@ public func googlePrepareSpeechRequest(
         }
     }
 
-    let speechConfig: JSONValue
+    let baseSpeechConfig: JSONValue
     if let multiSpeakerVoiceConfig {
-        speechConfig = .object(["multiSpeakerVoiceConfig": multiSpeakerVoiceConfig])
+        baseSpeechConfig = .object(["multiSpeakerVoiceConfig": multiSpeakerVoiceConfig])
     } else {
-        speechConfig = .object([
+        baseSpeechConfig = .object([
             "voiceConfig": .object([
                 "prebuiltVoiceConfig": .object([
                     "voiceName": .string(request.voice ?? "Kore")
@@ -260,9 +254,11 @@ public func googlePrepareSpeechRequest(
             ])
         ])
     }
+    var speechConfig = baseSpeechConfig.objectValue ?? [:]
+    if let language = request.language, language != "auto" { speechConfig["languageCode"] = .string(language) }
     var generationConfig: [String: JSONValue] = [
         "responseModalities": .array([.string("AUDIO")]),
-        "speechConfig": speechConfig
+        "speechConfig": .object(speechConfig)
     ]
     if usesStructuredSpeech, request.format != nil {
         generationConfig["responseFormat"] = .object([

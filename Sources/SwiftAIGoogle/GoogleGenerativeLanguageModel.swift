@@ -27,7 +27,7 @@ public final class GoogleGenerativeLanguageModel: LanguageModel, @unchecked Send
                 abortSignal: request.abortSignal
             )
         }
-        return try response.result(providerID: providerID, modelID: modelID, prepared: prepared, jsonResponseToolName: jsonResponse.name)
+        return try response.result(providerID: providerID, modelID: modelID, prepared: prepared, jsonResponseToolName: jsonResponse.name, requestMetadata: .init(body: prepared.body, headers: request.headers, url: try config.http.url(modelID, "/models/\(modelID):generateContent").absoluteString))
     }
 
     public func stream(_ request: LanguageModelRequest) -> AsyncThrowingStream<LanguageStreamPart, Error> {
@@ -138,6 +138,8 @@ public func googlePrepareJSONResponseToolRequest(
     modelID: String
 ) -> (request: LanguageModelRequest, name: String?) {
     let choice = request.toolChoice ?? request.extraBody["toolChoice"]
+    var request = request
+    if (choice?["type"]?.stringValue ?? choice?.stringValue) == "none" { request.tools = request.tools.filter { name, value in value["type"]?.stringValue != "provider" && !(value["id"]?.stringValue ?? name).hasPrefix("google.") } }
     let choiceType = choice?["type"]?.stringValue ?? choice?.stringValue
     guard case let .json(schema?, _, description) = request.responseFormat,
           request.tools.contains(where: { name, schema in
@@ -248,6 +250,7 @@ public func googleGenerateContentMessageJSON(
             includeFunctionCallIDs: includeFunctionCallIDs,
             supportsGoogleCloudStorageToolResults: supportsGoogleCloudStorageToolResults,
             videoMetadataEnabled: message.role == .user,
+            isAssistant: message.role == .assistant,
             providerOptionsNames: providerOptionsNames,
             warnings: &warnings
         ))
@@ -261,6 +264,7 @@ func googleGenerateContentParts(
     includeFunctionCallIDs: Bool = true,
     supportsGoogleCloudStorageToolResults: Bool = false,
     videoMetadataEnabled: Bool = true,
+    isAssistant: Bool = false,
     providerOptionsNames: [String] = ["google"],
     warnings: inout [AIWarning]
 ) throws -> [JSONValue] {
@@ -272,10 +276,14 @@ func googleGenerateContentParts(
         return [.object(value)]
     }
     switch part {
-    case let .text(text, _):
-        return [.object(["text": .string(text)])]
-    case let .reasoning(text, _):
-        return [.object(["text": .string(text)])]
+    case let .text(text, metadata), let .reasoning(text, metadata):
+        guard isAssistant else { return [.object(["text": .string(text)])] }
+        let signature = googleThoughtSignature(from: metadata)
+        guard !text.isEmpty || signature != nil else { return [] }
+        var value: [String: JSONValue] = ["text": .string(text)]
+        if case .reasoning = part { value["thought"] = true }
+        value["thoughtSignature"] = signature
+        return [.object(value)]
     case let .imageURL(url, _):
         return try filePart(["fileData": .object(["fileUri": .string(url)])])
     case let .data(mimeType, data, _), let .file(mimeType, data, _, _):
@@ -561,7 +569,7 @@ func googleMissingThoughtSignatureWarning(toolName: String) -> AIWarning {
 }
 
 func googleToolArguments(_ arguments: String) -> JSONValue {
-    (try? decodeJSONBody(Data(arguments.utf8))) ?? .object([:])
+    (try? decodeJSONBody(Data(arguments.utf8))) ?? .string(arguments)
 }
 
 func googleJSONString(_ value: JSONValue) -> String? {

@@ -73,6 +73,15 @@ public func googleInteractionsPreparedCall(for request: LanguageModelRequest, mo
         agent == nil ? "model" : "agent": .string(agent ?? modelID),
         "input": .array(input)
     ]
+    if let labels = options["labels"], labels != .null {
+        guard let values = labels.objectValue, values.values.allSatisfy({ $0.stringValue != nil }) else { throw AIError.invalidArgument(argument: "labels", message: "Google Interactions labels must contain string values.") }
+        body["labels"] = labels
+    }
+    let choice = request.toolChoice ?? options["toolChoice"]
+    let preparedTools = googleInteractionsPrepareNativeTools(request.tools, choice: choice)
+    if !preparedTools.tools.isEmpty { body["tools"] = .array(preparedTools.tools) }
+    if let choice = preparedTools.choice { body["tool_choice"] = choice }
+    conversionWarnings += preparedTools.warnings
     if stream, agent == nil {
         body["stream"] = true
     }

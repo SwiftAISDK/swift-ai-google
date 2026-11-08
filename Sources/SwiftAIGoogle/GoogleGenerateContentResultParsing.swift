@@ -318,6 +318,10 @@ public struct GoogleContinuedGenerateContentResponse {
     public var usageMetadata: JSONValue?
 
     public func result(providerID: String, modelID: String, prepared: GoogleGenerateContentPreparedCall, jsonResponseToolName: String?) throws -> TextGenerationResult {
+        try result(providerID: providerID, modelID: modelID, prepared: prepared, jsonResponseToolName: jsonResponseToolName, requestMetadata: AIRequestMetadata())
+    }
+
+    public func result(providerID: String, modelID: String, prepared: GoogleGenerateContentPreparedCall, jsonResponseToolName: String?, requestMetadata: AIRequestMetadata) throws -> TextGenerationResult {
         let raw = responses.last ?? .object([:])
         var converted = raw.objectValue ?? [:]
         converted["usageMetadata"] = usageMetadata
@@ -347,7 +351,7 @@ public struct GoogleContinuedGenerateContentResponse {
         let hasMedia = content.contains { if case .file = $0 { return true }; if case .reasoningFile = $0 { return true }; return false }
         return TextGenerationResult(
             text: textParts.joined(),
-            content: responses.count == 1 && jsonResponseToolName == nil && !hasMedia ? [] : content,
+            content: responses.count == 1 && jsonResponseToolName == nil && !hasMedia && toolCalls.isEmpty ? [] : content,
             reasoning: responses.count == 1 && jsonResponseToolName == nil ? "" : parsed.map(googleGenerateContentReasoning).joined(),
             finishReason: finishReason,
             usage: usageMetadata.map(googleGenerateContentUsage(fromUsageMetadata:)),
@@ -357,6 +361,7 @@ public struct GoogleContinuedGenerateContentResponse {
             providerMetadata: metadata,
             rawValue: raw,
             warnings: prepared.warnings,
+            requestMetadata: requestMetadata,
             responseMetadata: googleGenerateContentResponseMetadata(from: raw, response: response, modelID: modelID)
         )
     }
