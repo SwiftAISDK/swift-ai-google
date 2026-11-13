@@ -337,6 +337,12 @@ public struct GoogleContinuedGenerateContentResponse {
             throw AIError.invalidResponse(provider: providerID, message: providerID.contains("vertex") ? "No candidate text found in Vertex response." : "No candidate text found in Google response.")
         }
         var metadata = googleGenerateContentProviderMetadata(from: .object(converted))
+        if converted["usageMetadata"]?["serviceTier"] == nil || converted["usageMetadata"]?["serviceTier"] == .null,
+           let tier = response.headerValue("x-gemini-service-tier") {
+            var google = metadata["google"]?.objectValue ?? [:]
+            google["serviceTier"] = .string(tier)
+            metadata["google"] = .object(google)
+        }
         if responses.count > 1 {
             var google = metadata["google"]?.objectValue ?? [:]
             google["groundingMetadataPerRequest"] = .array(responses.map {

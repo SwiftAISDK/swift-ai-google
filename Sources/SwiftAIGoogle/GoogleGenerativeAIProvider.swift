@@ -4,9 +4,9 @@ import SwiftAITransport
 import SwiftAIProviderUtilities
 
 
-public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider, AIDecisionProvider, @unchecked Sendable {
+public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider, AIDecisionProvider, AIExtractionProvider, @unchecked Sendable {
     public let providerID: String
-    public let supportedCapabilities: Set<ModelCapability> = [.language, .embedding, .image, .speech, .video, .evaluation, .decision]
+    public let supportedCapabilities: Set<ModelCapability> = [.language, .embedding, .image, .speech, .video, .evaluation, .decision, .extraction]
     private let config: GoogleModelConfiguration
 
     public init(configuration settings: GoogleProviderSettings) throws {
@@ -19,7 +19,7 @@ public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider,
         var headers = normalizeHeaders(settings.headers)
         headers["x-goog-api-key"] = headers["x-goog-api-key"] ?? key
         if providerID == "google.generative-ai" {
-            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.114")
+            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.120")
         }
         let baseURL = withoutTrailingSlash(settings.baseURL ?? "https://generativelanguage.googleapis.com/v1beta")
         config = GoogleModelConfiguration(
@@ -52,11 +52,19 @@ public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider,
         )
     }
 
+    public func nativeDecisionModel(_ modelID: String) -> GoogleDecisionModel { GoogleDecisionModel(modelID: modelID, config: config) }
+
     public func decisionModel(_ modelID: String) throws -> any AIDecisionModelV4 {
-        DecisionLanguageModel(
+        if modelID.hasPrefix("gemini-decision-") { return nativeDecisionModel(modelID) }
+        return DecisionLanguageModel(
             model: try languageModel(modelID),
             providerID: String(googleEvaluationProviderID(from: providerID).dropLast(".evaluation".count)) + ".decision"
         )
+    }
+
+    public func extractionModel(_ modelID: String) throws -> any AIExtractionModelV4 {
+        let root = providerID.hasSuffix(".generative-ai") ? String(providerID.dropLast(".generative-ai".count)) : providerID
+        return AIExtractionLanguageModel(model: try languageModel(modelID), providerID: root + ".extraction")
     }
 
     public func experimentalDecisionModel(_ modelID: String) throws -> any AIDecisionModelV4 {

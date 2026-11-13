@@ -187,6 +187,9 @@ func googleThinkingConfig(for reasoning: String?, modelID: String, warnings: ino
             "high": "high"
         ]
         if minimumThinkingLevel == "minimal" { effortMap["minimal"] = "minimal" }
+        if modelID.range(of: #"(^|[/.])gemini-4-hydrogen(?:-|$)"#, options: [.regularExpression, .caseInsensitive]) != nil {
+            effortMap["xhigh"] = "xhigh"
+        }
         guard let mapped = mapReasoningToProviderEffort(reasoning: reasoning, effortMap: effortMap, warnings: &warnings) else { return nil }
         return ["thinkingLevel": .string(mapped)]
     }
@@ -202,6 +205,7 @@ func googleThinkingConfig(for reasoning: String?, modelID: String, warnings: ino
 
 private func googleMinimumThinkingLevelForGemini3Model(_ modelID: String) -> String {
     let normalized = modelID.lowercased()
+    if normalized.range(of: #"(^|[/.])gemini-4-hydrogen(?:-|$)"#, options: .regularExpression) != nil { return "low" }
     guard let range = normalized.range(of: #"(^|[/.])gemini-[^/]*$"#, options: .regularExpression) else { return "minimal" }
     let modelName = String(normalized[range]).trimmingCharacters(in: CharacterSet(charactersIn: "/."))
     if modelName == "gemini-flash-latest" {

@@ -103,6 +103,10 @@ func googleSourceDeduplicationKey(_ source: AISource) -> String {
     if source.sourceType == "url", let url = source.url {
         return "url:\(url)"
     }
+    if let context = source.rawValue?["retrievedContext"] {
+        if let uri = context["uri"]?.stringValue, !uri.isEmpty { return "document:\(uri)" }
+        if let store = context["fileSearchStore"]?.stringValue { return "file-search:\(store):\(context["title"]?.stringValue ?? "Unknown Document")" }
+    }
     return "document:\(source.filename ?? source.title ?? source.id)"
 }
 
@@ -262,12 +266,18 @@ struct GoogleJSONResponseArgumentAccumulator {
             let isArrayTerminator = rawPath.hasSuffix("[]")
             let path = isArrayTerminator ? String(rawPath.dropLast(2)) : rawPath
             guard path.hasPrefix("$."), path.count > 2 else { continue }
-            let segments = Self.pathSegments(String(path.dropFirst(2)))
-            guard let leaf = segments.last else { continue }
+            var segments = Self.pathSegments(String(path.dropFirst(2)))
+            guard !segments.isEmpty else { continue }
             var nextLengths = arrayLengths
             var prefix = ""
             var contiguous = true
-            for segment in segments {
+            for position in segments.indices {
+                var segment = segments[position]
+                if nextLengths[prefix] != nil, !segment.hasPrefix("["),
+                   let index = UInt64(segment), index < 4_294_967_295, String(index) == segment {
+                    segment = "[\(index)]"
+                    segments[position] = segment
+                }
                 if segment.hasPrefix("[") {
                     guard let index = Int(segment.dropFirst().dropLast()), index < Int.max else { contiguous = false; break }
                     let count = nextLengths[prefix] ?? 0
@@ -276,9 +286,10 @@ struct GoogleJSONResponseArgumentAccumulator {
                 }
                 prefix += "/" + segment
             }
-            guard contiguous else { continue }
+            guard contiguous, let leaf = segments.last else { continue }
             arrayLengths = nextLengths
-            if let string = arg["stringValue"]?.stringValue, stringPaths.contains(path) {
+            let canonicalPath = segments.joined(separator: "/")
+            if let string = arg["stringValue"]?.stringValue, stringPaths.contains(canonicalPath) {
                 let escaped = googleGenerateContentArguments(.string(string))
                 delta += String(escaped.dropFirst().dropLast())
                 if arg["willContinue"] != true, stringOpen { delta += "\""; stringOpen = false }
@@ -293,7 +304,7 @@ struct GoogleJSONResponseArgumentAccumulator {
             else if let supplied = arg["value"] { value = supplied }
             else {
                 if seenPaths.contains(segments.joined(separator: "/")) {
-                    if stringPaths.contains(path), arg["willContinue"] != true, stringOpen { delta += "\""; stringOpen = false }
+                    if stringPaths.contains(canonicalPath), arg["willContinue"] != true, stringOpen { delta += "\""; stringOpen = false }
                     continue
                 }
                 guard arg["willContinue"] != true else { continue }
@@ -305,7 +316,7 @@ struct GoogleJSONResponseArgumentAccumulator {
             // incomplete path declaration.
             let replacedPrefix = segments.map { "/" + $0 }.joined()
             arrayLengths = arrayLengths.filter { !$0.key.hasPrefix(replacedPrefix + "/") && $0.key != replacedPrefix }
-            if let array = value.arrayValue { arrayLengths[replacedPrefix] = array.count }
+            Self.recordArrayLengths(value, prefix: replacedPrefix, lengths: &arrayLengths)
             for depth in 1...segments.count { seenPaths.insert(segments.prefix(depth).joined(separator: "/")) }
             if stringOpen { delta += "\""; stringOpen = false }
             if containers.isEmpty { containers.append(Container(segment: "", isArray: false)); delta += "{" }
@@ -329,7 +340,7 @@ struct GoogleJSONResponseArgumentAccumulator {
             }
             let json = googleGenerateContentArguments(value)
             if value.stringValue != nil {
-                stringPaths.insert(path)
+                stringPaths.insert(canonicalPath)
             }
             if value.stringValue != nil, arg["willContinue"]?.boolValue == true {
                 delta += String(json.dropLast())
@@ -349,6 +360,15 @@ struct GoogleJSONResponseArgumentAccumulator {
         while !containers.isEmpty { delta += containers.removeLast().isArray ? "]" : "}" }
         jsonText += delta
         return delta
+    }
+
+    private static func recordArrayLengths(_ value: JSONValue, prefix: String, lengths: inout [String: Int]) {
+        if let values = value.arrayValue {
+            lengths[prefix] = values.count
+            for (index, value) in values.enumerated() { recordArrayLengths(value, prefix: prefix + "/[\(index)]", lengths: &lengths) }
+        } else if let object = value.objectValue {
+            for (key, value) in object { recordArrayLengths(value, prefix: prefix + "/" + key, lengths: &lengths) }
+        }
     }
 
     private mutating func startChild(_ segment: String) -> String {

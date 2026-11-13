@@ -347,7 +347,8 @@ struct GoogleGenerateContentStreamState {
         latestUsage = usageMetadata.map(googleGenerateContentUsage(fromUsageMetadata:))
         var google = latestProviderMetadata["google"]?.objectValue ?? [:]
         google["usageMetadata"] = usageMetadata ?? .null
-        google["serviceTier"] = usageMetadata?["serviceTier"] ?? .null
+        google["serviceTier"] = (usageMetadata?["serviceTier"]?.stringValue
+            ?? responseMetadata.headers.first(where: { $0.key.lowercased() == "x-gemini-service-tier" })?.value).map(JSONValue.string) ?? .null
         if !groundingMetadataPerRequest.isEmpty {
             google["groundingMetadataPerRequest"] = .array(
                 groundingMetadataPerRequest + [currentRequestGroundingMetadata ?? .null]
