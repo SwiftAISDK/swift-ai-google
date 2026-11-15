@@ -5,7 +5,7 @@ import SwiftAIProviderUtilities
 
 
 public func googleInteractionsHeaders(_ requestHeaders: [String: String]) -> [String: String] {
-    ["Api-Revision": "2026-05-20"].mergingHeaders(requestHeaders)
+    requestHeaders
 }
 
 public struct GoogleInteractionsPreparedCall {
@@ -96,7 +96,12 @@ public func googleInteractionsPreparedCall(for request: LanguageModelRequest, mo
         if let seed = request.seed { generationConfig["seed"] = .number(Double(seed)) }
         if let maxOutputTokens = request.maxOutputTokens { generationConfig["max_output_tokens"] = .number(Double(maxOutputTokens)) }
         if !request.stopSequences.isEmpty { generationConfig["stop_sequences"] = .array(request.stopSequences) }
-        if let thinkingLevel = options["thinkingLevel"] { generationConfig["thinking_level"] = thinkingLevel }
+        if let thinkingLevel = mapReasoningToProviderEffort(
+            reasoning: request.reasoning,
+            effortMap: googleReasoningEffortMap(modelID),
+            warnings: &conversionWarnings,
+            providerOptionsEffort: options["thinkingLevel"]?.stringValue
+        ) { generationConfig["thinking_level"] = .string(thinkingLevel) }
         if let thinkingSummaries = options["thinkingSummaries"] { generationConfig["thinking_summaries"] = thinkingSummaries }
         if !generationConfig.isEmpty {
             body["generation_config"] = .object(generationConfig)
@@ -610,6 +615,7 @@ func googleInteractionsWarnings(request: LanguageModelRequest, options: [String:
     if request.seed != nil { droppedFields.append("seed") }
     if !request.stopSequences.isEmpty { droppedFields.append("stopSequences") }
     if request.maxOutputTokens != nil { droppedFields.append("maxOutputTokens") }
+    if isCustomReasoning(request.reasoning) { droppedFields.append("reasoning") }
     if options["thinkingLevel"] != nil { droppedFields.append("thinkingLevel") }
     if options["thinkingSummaries"] != nil { droppedFields.append("thinkingSummaries") }
     if options["imageConfig"] != nil { droppedFields.append("imageConfig") }

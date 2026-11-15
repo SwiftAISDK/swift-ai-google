@@ -180,17 +180,7 @@ public func googleToolConfigWithProviderOptions(_ toolConfig: JSONValue?, option
 func googleThinkingConfig(for reasoning: String?, modelID: String, warnings: inout [AIWarning]) -> [String: JSONValue]? {
     guard let reasoning, reasoning != "provider-default" else { return nil }
     if googleIsGemini3OrNewer(modelID), !modelID.contains("gemini-3-pro-image") {
-        let minimumThinkingLevel = googleMinimumThinkingLevelForGemini3Model(modelID)
-        var effortMap = [
-            "low": "low",
-            "medium": "medium",
-            "high": "high"
-        ]
-        if minimumThinkingLevel == "minimal" { effortMap["minimal"] = "minimal" }
-        if modelID.range(of: #"(^|[/.])gemini-4-hydrogen(?:-|$)"#, options: [.regularExpression, .caseInsensitive]) != nil {
-            effortMap["xhigh"] = "xhigh"
-        }
-        guard let mapped = mapReasoningToProviderEffort(reasoning: reasoning, effortMap: effortMap, warnings: &warnings) else { return nil }
+        guard let mapped = mapReasoningToProviderEffort(reasoning: reasoning, effortMap: googleReasoningEffortMap(modelID), warnings: &warnings) else { return nil }
         return ["thinkingLevel": .string(mapped)]
     }
 
@@ -201,6 +191,18 @@ func googleThinkingConfig(for reasoning: String?, modelID: String, warnings: ino
     guard let budget = mapReasoningToProviderBudget(reasoning: reasoning, maxOutputTokens: 65536,
         maxReasoningBudget: googleMaxThinkingTokensForGemini25Model(modelID), minReasoningBudget: minimumBudget, warnings: &warnings) else { return nil }
     return ["thinkingBudget": .number(Double(budget))]
+}
+
+// The published model catalog exposes effort levels only for level-based models.
+// Interactions and GenerateContent use the same model-family capability gates.
+func googleReasoningEffortMap(_ modelID: String) -> [String: String] {
+    guard googleIsGemini3OrNewer(modelID), !modelID.contains("gemini-3-pro-image") else { return [:] }
+    var map = ["low": "low", "medium": "medium", "high": "high"]
+    if googleMinimumThinkingLevelForGemini3Model(modelID) == "minimal" { map["minimal"] = "minimal" }
+    if modelID.range(of: #"(^|[/.])gemini-4-hydrogen(?:-|$)"#, options: [.regularExpression, .caseInsensitive]) != nil {
+        map["xhigh"] = "xhigh"
+    }
+    return map
 }
 
 private func googleMinimumThinkingLevelForGemini3Model(_ modelID: String) -> String {

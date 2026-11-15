@@ -55,9 +55,7 @@ public final class GoogleInteractionsLanguageModel: LanguageModel, @unchecked Se
                         throw config.httpStatusError( try await bufferedHTTPResponse(from: response, request: httpRequest))
                     }
 
-                    if !prepared.warnings.isEmpty {
-                        continuation.yield(.streamStart(warnings: prepared.warnings))
-                    }
+                    continuation.yield(.streamStart(warnings: prepared.warnings))
                     var toolCalls = GoogleInteractionsStreamingToolCalls()
                     var content = GoogleInteractionsStreamingContent()
                     var hasFunctionCall = false

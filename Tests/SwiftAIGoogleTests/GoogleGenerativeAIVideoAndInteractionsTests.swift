@@ -153,7 +153,7 @@ import Testing
     let request = try #require(await transport.requests().first)
     #expect(request.url.absoluteString == "https://generativelanguage.googleapis.com/v1beta/interactions")
     #expect(request.headers["x-goog-api-key"] == "gemini-key")
-    #expect(request.headers["Api-Revision"] == "2026-05-20")
+    #expect(!request.headers.keys.contains { $0.lowercased() == "api-revision" })
     let body = try decodeJSONBody(try #require(request.body))
     #expect(body["model"]?.stringValue == "gemini-2.5-flash")
     #expect(body["system_instruction"]?.stringValue == "Be helpful.")

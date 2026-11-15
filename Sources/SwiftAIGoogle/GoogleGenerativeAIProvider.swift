@@ -19,7 +19,7 @@ public final class GoogleGenerativeAIProvider: AIProvider, AIEvaluationProvider,
         var headers = normalizeHeaders(settings.headers)
         headers["x-goog-api-key"] = headers["x-goog-api-key"] ?? key
         if providerID == "google.generative-ai" {
-            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.120")
+            headers = withUserAgentSuffix(headers, "ai-sdk-google/4.0.121")
         }
         let baseURL = withoutTrailingSlash(settings.baseURL ?? "https://generativelanguage.googleapis.com/v1beta")
         config = GoogleModelConfiguration(

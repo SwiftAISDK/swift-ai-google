@@ -14,7 +14,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "SwiftAIGoogle", dependencies: [.product(name: "SwiftAIProvider", package: "swift-ai-core"), .product(name: "SwiftAITransport", package: "swift-ai-core"), .product(name: "SwiftAIProviderUtilities", package: "swift-ai-core")]),
-        .testTarget(name: "SwiftAIGoogleTests", dependencies: ["SwiftAIGoogle", .product(name: "SwiftAIProvider", package: "swift-ai-core"), .product(name: "SwiftAITransport", package: "swift-ai-core"), .product(name: "SwiftAIProviderUtilities", package: "swift-ai-core"), .product(name: "SwiftAI", package: "swift-ai-core")])
+        .testTarget(name: "SwiftAIGoogleTests", dependencies: ["SwiftAIGoogle", .product(name: "SwiftAIProvider", package: "swift-ai-core"), .product(name: "SwiftAITransport", package: "swift-ai-core"), .product(name: "SwiftAIProviderUtilities", package: "swift-ai-core"), .product(name: "SwiftAI", package: "swift-ai-core")], resources: [.process("Fixtures")])
     ],
     swiftLanguageModes: [.v6]
 )
