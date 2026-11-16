@@ -163,12 +163,10 @@ struct GoogleGenerateContentStreamState {
                executableCode["code"]?.stringValue != nil {
                 let id = "google-code-execution-\(index)" + (requestHop == 0 ? "" : "-hop-\(requestHop)")
                 lastCodeExecutionToolCallID = id
-                sawToolCalls = true
+                // Provider-executed calls are emitted as a single tool-call
+                // and do not select the `tool-calls` finish reason.
                 let toolName = toolNameMapping.toCustomToolName("code_execution")
-                parts.append(.toolInputStart(id: id, name: toolName, providerExecuted: true))
                 let input = googleGenerateContentArguments(executableCode)
-                parts.append(.toolInputDelta(id: id, delta: input))
-                parts.append(.toolInputEnd(id: id))
                 parts.append(.toolCall(AIToolCall(
                     id: id,
                     name: toolName,
@@ -264,13 +262,9 @@ struct GoogleGenerateContentStreamState {
                let toolType = serverToolCall["toolType"]?.stringValue {
                 let id = serverToolCall["id"]?.stringValue ?? ("google-server-tool-\(index)" + (requestHop == 0 ? "" : "-hop-\(requestHop)"))
                 lastServerToolCallID = id
-                sawToolCalls = true
                 let name = "server:\(toolType)"
                 let input = googleGenerateContentArguments(serverToolCall["args"])
                 let metadata = googleServerToolProviderMetadata(id: id, type: toolType, part: contentPart)
-                parts.append(.toolInputStart(id: id, name: name, providerExecuted: true, dynamic: true, providerMetadata: metadata))
-                parts.append(.toolInputDelta(id: id, delta: input, providerMetadata: metadata))
-                parts.append(.toolInputEnd(id: id, providerMetadata: metadata))
                 parts.append(.toolCall(AIToolCall(
                     id: id,
                     name: name,
@@ -430,8 +424,10 @@ public func googleStreamWithContinuation(
     jsonResponseToolName: String?,
     continuation: AsyncThrowingStream<LanguageStreamPart, Error>.Continuation,
     errorHandler: (@Sendable (AIHTTPResponse) -> AIError)? = nil,
+    transformPart: (@Sendable (LanguageStreamPart) -> LanguageStreamPart)? = nil,
     open: (JSONValue) async throws -> (request: AIHTTPRequest, response: AIHTTPStreamResponse)
 ) async throws {
+    let transform = transformPart ?? { $0 }
     var nextBody = body
     var state: GoogleGenerateContentStreamState?
     while true {
@@ -449,11 +445,11 @@ public func googleStreamWithContinuation(
             try request.abortSignal?.throwIfAborted()
             guard state != nil, !(error is CancellationError), !(error is AIAbortError) else { throw error }
             // Preserve the last continuation token so a failed hop is resumable.
-            continuation.yield(googleContinuationStreamError(error))
+            continuation.yield(transform(googleContinuationStreamError(error)))
             break
         }
         if state == nil {
-            continuation.yield(.requestMetadata(.init(body: nextBody, headers: request.headers, url: opened.request.url.absoluteString)))
+            continuation.yield(transform(.requestMetadata(.init(body: nextBody, headers: request.headers, url: opened.request.url.absoluteString))))
             state = GoogleGenerateContentStreamState(
                 response: httpResponseHead(from: opened.response, request: opened.request),
                 includeRawChunks: request.includeRawChunks,
@@ -475,14 +471,14 @@ public func googleStreamWithContinuation(
             do { raw = try decodeJSONBody(Data(event.data.utf8)) }
             catch {
                 state!.recordParseError()
-                continuation.yield(.error(message: error.localizedDescription))
+                continuation.yield(transform(.error(message: error.localizedDescription)))
                 continue
             }
             if raw["error"] != nil && raw["error"] != .null { receivedProviderError = true }
             if let candidate = raw["candidates"]?[0], candidate["finishReason"] == "CONTINUATION", let token = candidate["continuationToken"]?.stringValue {
                 pendingToken = token
             }
-            for part in state!.apply(raw) { continuation.yield(part) }
+            for part in state!.apply(raw) { continuation.yield(transform(part)) }
         }
         guard !receivedProviderError, let token = pendingToken else { break }
         state!.completeRequest(willContinue: true)
@@ -490,7 +486,7 @@ public func googleStreamWithContinuation(
         resumed["continuationToken"] = .string(token)
         nextBody = .object(resumed)
     }
-    for part in state?.finish() ?? [] { continuation.yield(part) }
+    for part in state?.finish() ?? [] { continuation.yield(transform(part)) }
 }
 
 private func googleContinuationStreamError(_ error: Error) -> LanguageStreamPart {

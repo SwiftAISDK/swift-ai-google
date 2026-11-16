@@ -37,8 +37,9 @@ func googleInteractionsPrepareNativeTools(_ tools: [String: JSONValue], choice: 
             output.append(.object(value))
         } else {
             var schema = tool["inputSchema"] ?? tool["parameters"] ?? tool
-            if tool["inputSchema"] == nil && tool["parameters"] == nil, var object = schema.objectValue {
-                for key in ["description", "providerOptions", "name"] { object.removeValue(forKey: key) }
+            // Upstream sends only `tool.inputSchema` as `parameters`.
+            if tool["inputSchema"] == nil && tool["parameters"] == nil, var object = aiFunctionToolInputSchema(schema).objectValue {
+                object.removeValue(forKey: "name")
                 if object["type"] == "function" { object.removeValue(forKey: "type") }
                 schema = .object(object)
             }

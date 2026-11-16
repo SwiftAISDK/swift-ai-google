@@ -35,6 +35,13 @@ func googleJSONResponseToolContent(
     for part in raw["candidates"]?[0]?["content"]?["parts"]?.arrayValue ?? [] {
         if let text = part["text"]?.stringValue {
             let metadata = googleThoughtSignatureProviderMetadata(from: part)
+            // An empty signed text part carries the signature of the previous part.
+            if text.isEmpty {
+                if !metadata.isEmpty, let last = content.indices.last {
+                    content[last] = googleReplacingProviderMetadata(content[last], with: metadata)
+                }
+                continue
+            }
             content.append(part["thought"]?.boolValue == true ? .reasoning(text, providerMetadata: metadata) : .text(text, providerMetadata: metadata))
         } else if part["functionCall"] != nil || part["executableCode"] != nil || part["toolCall"] != nil {
             if let call = calls.next() { content.append(.toolCall(call)) }
@@ -166,18 +173,17 @@ func googleGenerateContentSources(from raw: JSONValue) -> [AISource] {
 func googleGenerateContentProviderMetadata(from raw: JSONValue, includeNullDefaults: Bool = true) -> [String: JSONValue] {
     let candidate = raw["candidates"]?[0]
     var google: [String: JSONValue] = [:]
-    if let safetyRatings = candidate?["safetyRatings"] {
-        google["safetyRatings"] = safetyRatings
-    }
-    if let promptFeedback = raw["promptFeedback"] {
-        google["promptFeedback"] = promptFeedback
-    }
-    if let groundingMetadata = candidate?["groundingMetadata"],
-       includeNullDefaults || groundingMetadata != .null {
-        google["groundingMetadata"] = groundingMetadata
-    }
-    if let urlContextMetadata = candidate?["urlContextMetadata"] {
-        google["urlContextMetadata"] = urlContextMetadata
+    for (key, value) in [
+        ("safetyRatings", candidate?["safetyRatings"]),
+        ("promptFeedback", raw["promptFeedback"]),
+        ("groundingMetadata", candidate?["groundingMetadata"]),
+        ("urlContextMetadata", candidate?["urlContextMetadata"])
+    ] {
+        if let value, value != .null {
+            google[key] = value
+        } else if includeNullDefaults {
+            google[key] = .null
+        }
     }
     if let token = candidate?["continuationToken"], token != .null {
         google["continuationToken"] = token
@@ -203,6 +209,9 @@ func googleGenerateContentProviderMetadata(from raw: JSONValue, includeNullDefau
 
 func googleFinalizeGenerateContentProviderMetadata(_ providerMetadata: [String: JSONValue]) -> [String: JSONValue] {
     var google = providerMetadata["google"]?.objectValue ?? [:]
+    for key in ["promptFeedback", "groundingMetadata", "urlContextMetadata", "safetyRatings"] {
+        google[key] = google[key] ?? .null
+    }
     google["finishMessage"] = google["finishMessage"] ?? .null
     google["usageMetadata"] = google["usageMetadata"] ?? .null
     google["serviceTier"] = google["serviceTier"] ?? .null
@@ -326,15 +335,24 @@ public struct GoogleContinuedGenerateContentResponse {
         var converted = raw.objectValue ?? [:]
         converted["usageMetadata"] = usageMetadata
         let parsed = responses.map { googleConvertJSONResponseTool($0, name: jsonResponseToolName) }
-        let finishReason = googleGenerateContentFinishReason(from: raw, hasToolCalls: !(parsed.last.map { googleGenerateContentToolCalls(from: $0) } ?? []).isEmpty)
-        let textParts = parsed.compactMap { googleGenerateContentText(from: $0, includeThoughts: responses.count == 1 && jsonResponseToolName == nil) }
-        let content = parsed.enumerated().flatMap { hop, response in
-            googleContinuationContent(googleJSONResponseToolContent(from: response, toolNameMapping: prepared.toolNameMapping), hop: hop)
+        let hopContents = parsed.map { googleJSONResponseToolContent(from: $0, toolNameMapping: prepared.toolNameMapping) }
+        // Only client-executed tool calls of the final response select `tool-calls`.
+        let hasClientToolCalls = (hopContents.last ?? []).contains { part in
+            if case let .toolCall(call) = part { return !call.providerExecuted }
+            return false
         }
-        let toolCalls = resultToolCalls(from: content)
-        let toolResults = resultToolResults(from: content)
-        guard !textParts.isEmpty || !content.isEmpty || finishReason == "content-filter" else {
-            throw AIError.invalidResponse(provider: providerID, message: providerID.contains("vertex") ? "No candidate text found in Vertex response." : "No candidate text found in Google response.")
+        let finishReason = googleGenerateContentFinishReason(from: raw, hasToolCalls: hasClientToolCalls) ?? "other"
+        let content = hopContents.enumerated().flatMap { hop, hopContent in
+            googleContinuationContent(hopContent, hop: hop)
+        }
+        var text = ""
+        var reasoning = ""
+        for part in content {
+            switch part {
+            case let .text(value, _): text += value
+            case let .reasoning(value, _): reasoning += value
+            default: break
+            }
         }
         var metadata = googleGenerateContentProviderMetadata(from: .object(converted))
         if converted["usageMetadata"]?["serviceTier"] == nil || converted["usageMetadata"]?["serviceTier"] == .null,
@@ -354,16 +372,12 @@ public struct GoogleContinuedGenerateContentResponse {
             }
             metadata["google"] = .object(google)
         }
-        let hasMedia = content.contains { if case .file = $0 { return true }; if case .reasoningFile = $0 { return true }; return false }
         return TextGenerationResult(
-            text: textParts.joined(),
-            content: responses.count == 1 && jsonResponseToolName == nil && !hasMedia && toolCalls.isEmpty ? [] : content,
-            reasoning: responses.count == 1 && jsonResponseToolName == nil ? "" : parsed.map(googleGenerateContentReasoning).joined(),
+            text: text,
+            content: content,
+            reasoning: reasoning,
             finishReason: finishReason,
             usage: usageMetadata.map(googleGenerateContentUsage(fromUsageMetadata:)),
-            toolCalls: toolCalls,
-            toolResults: toolResults,
-            sources: resultSources(from: content),
             providerMetadata: metadata,
             rawValue: raw,
             warnings: prepared.warnings,
@@ -437,5 +451,19 @@ public func googleGenerateContentWithContinuation(
         var resumed = body.objectValue ?? [:]
         resumed["continuationToken"] = .string(token)
         nextBody = .object(resumed)
+    }
+}
+
+func googleReplacingProviderMetadata(_ part: AIResultContentPart, with metadata: [String: JSONValue]) -> AIResultContentPart {
+    switch part {
+    case let .text(text, _): return .text(text, providerMetadata: metadata)
+    case let .citedText(text, citations, _): return .citedText(text, citations: citations, providerMetadata: metadata)
+    case let .reasoning(text, _): return .reasoning(text, providerMetadata: metadata)
+    case var .toolCall(call): call.providerMetadata = metadata; return .toolCall(call)
+    case var .toolResult(result): result.providerMetadata = metadata; return .toolResult(result)
+    case var .file(file): file.providerMetadata = metadata; return .file(file)
+    case var .reasoningFile(file): file.providerMetadata = metadata; return .reasoningFile(file)
+    case let .custom(value, _): return .custom(value, providerMetadata: metadata)
+    case .source, .toolApprovalRequest, .toolApprovalResponse: return part
     }
 }

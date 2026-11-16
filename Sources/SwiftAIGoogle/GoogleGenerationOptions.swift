@@ -33,6 +33,12 @@ public func googlePrepareGenerateContentOptions(
     var warnings: [AIWarning] = []
     var headers: [String: String] = [:]
 
+    if !isVertexProvider, request.tools.values.contains(where: { $0["type"]?.stringValue == "provider" && $0["id"]?.stringValue == "google.vertex_rag_store" }) {
+        warnings.append(AIWarning(
+            type: "other",
+            message: "The 'vertex_rag_store' tool is only supported with the Google Vertex provider and might not be supported or could behave unexpectedly with the current Google provider (\(providerID))."
+        ))
+    }
     if options["streamFunctionCallArguments"]?.boolValue == true, !isVertexProvider {
         warnings.append(AIWarning(
             type: "other",
@@ -61,9 +67,34 @@ public func googlePrepareGenerateContentOptions(
         }
     }
 
+    // personGeneration, prominentPeople and imageOutputOptions are Vertex AI
+    // only; the Gemini API rejects them.
+    if !isVertexProvider, var imageConfig = options["imageConfig"]?.objectValue {
+        let dropped = ["personGeneration", "prominentPeople", "imageOutputOptions"].filter { key in
+            imageConfig[key].map { $0 != .null } ?? false
+        }
+        if !dropped.isEmpty {
+            let fields = dropped.map { "'imageConfig.\($0)'" }.joined(separator: ", ")
+            let verb = dropped.count == 1 ? "is a Vertex AI option and is" : "are Vertex AI options and are"
+            warnings.append(AIWarning(type: "other", message: "\(fields) \(verb) ignored with the current Google provider (\(providerID))."))
+            for key in ["personGeneration", "prominentPeople", "imageOutputOptions"] { imageConfig.removeValue(forKey: key) }
+            options["imageConfig"] = .object(imageConfig)
+        }
+    }
+
+    // Gemini 2.5 models reject penalties on the Gemini API (Vertex accepts them).
+    if googleDropsPenalties(modelID: modelID, isVertexProvider: isVertexProvider) {
+        if request.frequencyPenalty != nil { warnings.append(AIWarning(type: "unsupported", feature: "frequencyPenalty")) }
+        if request.presencePenalty != nil { warnings.append(AIWarning(type: "unsupported", feature: "presencePenalty")) }
+    }
+
+    let requestWarnings = warnings
+    var reasoningWarnings: [AIWarning] = []
     let explicitThinking = options["thinkingConfig"]
-    let hasExplicitThinking = explicitThinking?["thinkingBudget"]?.doubleValue != nil || explicitThinking?["thinkingLevel"]?.stringValue != nil
-    let thinkingConfig = hasExplicitThinking ? nil : googleThinkingConfig(for: request.reasoning, modelID: modelID, warnings: &warnings)
+    let hasExplicitThinking = explicitThinking?["thinkingBudget"].map { $0 != .null } ?? false
+        || explicitThinking?["thinkingLevel"].map { $0 != .null } ?? false
+    let thinkingConfig = hasExplicitThinking ? nil : googleThinkingConfig(for: request.reasoning, modelID: modelID, warnings: &reasoningWarnings)
+    warnings.append(contentsOf: reasoningWarnings)
     if var thinkingConfig {
         if let providerThinkingConfig = options["thinkingConfig"]?.objectValue {
             thinkingConfig.merge(providerThinkingConfig) { _, providerValue in providerValue }
@@ -77,7 +108,16 @@ public func googlePrepareGenerateContentOptions(
     options.removeValue(forKey: "sharedRequestType")
     options.removeValue(forKey: "requestType")
 
-    return GooglePreparedGenerateContentOptions(options: options, warnings: warnings, headers: headers)
+    var prepared = GooglePreparedGenerateContentOptions(options: options, warnings: warnings, headers: headers)
+    prepared.requestWarnings = requestWarnings
+    prepared.reasoningWarnings = reasoningWarnings
+    return prepared
+}
+
+/// Upstream `isGemini25DeveloperApiModel`: Gemini 2.5 rejects frequency and
+/// presence penalties on the Gemini API.
+func googleDropsPenalties(modelID: String, isVertexProvider: Bool) -> Bool {
+    !isVertexProvider && modelID.range(of: #"(^|[/.])gemini-2\.5([.-]|$)"#, options: [.regularExpression, .caseInsensitive]) != nil
 }
 
 public func googleResolvedResponseFormat(request: LanguageModelRequest, options: inout [String: JSONValue]) -> JSONValue? {

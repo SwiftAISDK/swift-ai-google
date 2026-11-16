@@ -35,21 +35,16 @@ public func googlePrepareTools(
     if hasFunctionTools, hasProviderTools, !capabilities.usesGemini3Features {
         warnings.append(AIWarning(type: "unsupported", feature: "combination of function and provider-defined tools"))
     }
-    if !isVertexProvider, tools.values.contains(where: { schema in
-        let object = schema.objectValue
-        return (object?["id"]?.stringValue ?? "") == "google.vertex_rag_store"
-    }) {
-        warnings.append(AIWarning(
-            type: "other",
-            message: "The 'vertex_rag_store' tool is only supported with the Google Vertex provider and might not be supported or could behave unexpectedly with the current Google provider."
-        ))
-    }
+    // The non-Vertex 'vertex_rag_store' warning is raised with the other
+    // request warnings (googlePrepareGenerateContentOptions), like upstream.
 
     if hasProviderTools {
         if hasFunctionTools, capabilities.usesGemini3Features, !providerTools.isEmpty {
             var prepared = providerTools
             prepared.append(.object(["functionDeclarations": .array(functionDeclarations)]))
-            var config = googleToolConfig(from: toolChoice, hasStrictTools: googleHasStrictTools(tools), defaultMode: "VALIDATED")
+            // Combined provider/function tools keep VALIDATED for `auto`.
+            let choiceType = toolChoice?["type"]?.stringValue ?? toolChoice?.stringValue
+            var config = (choiceType == "auto" ? nil : googleToolConfig(from: toolChoice, hasStrictTools: true, defaultMode: "VALIDATED"))
                 ?? .object(["functionCallingConfig": .object(["mode": .string("VALIDATED")])])
             if !isVertexProvider, var object = config.objectValue {
                 object["includeServerSideToolInvocations"] = true
@@ -122,7 +117,11 @@ func googleFunctionDeclarations(from tools: [String: JSONValue]) throws -> [JSON
             "name": .string(name),
             "description": .string(object?["description"]?.stringValue ?? "")
         ]
-        declaration["parametersJsonSchema"] = schema
+        // Upstream `prepareFunctionDeclaration` sends `tool.inputSchema` as
+        // `parametersJsonSchema`; `strict` is a tool flag (it selects VALIDATED
+        // mode) and description/providerOptions/inputExamples are tool metadata.
+        // The JSON response tool carries its schema verbatim under `inputSchema`.
+        declaration["parametersJsonSchema"] = object?["inputSchema"] ?? aiFunctionToolInputSchema(schema)
         return .object(declaration)
     }
 }

@@ -99,10 +99,16 @@ public struct GooglePreparedGenerateContentOptions {
     public var options: [String: JSONValue]
     public var warnings: [AIWarning]
     public var headers: [String: String]
+    /// Warnings raised before prompt conversion, in upstream order.
+    public var requestWarnings: [AIWarning]
+    /// Warnings raised while mapping `reasoning`, emitted after prompt warnings.
+    public var reasoningWarnings: [AIWarning]
     public init(options: [String: JSONValue], warnings: [AIWarning], headers: [String: String]) {
         self.options = options
         self.warnings = warnings
         self.headers = headers
+        self.requestWarnings = warnings
+        self.reasoningWarnings = []
     }
 
 }

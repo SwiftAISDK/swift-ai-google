@@ -5,7 +5,7 @@
       "name": "@ai-sdk/google",
       "reviewedVersion": "4.0.121",
       "ledgerKind": "provider",
-      "evidence": "`AIProviders.google`, `GoogleGenerativeAIProvider`, `GoogleGenerativeAI.swift`, `GoogleGenerativeMediaModels.swift`, `GoogleGenerativeAITests.swift`, `GoogleGenerativeAIMediaAndToolsTests.swift`, `GoogleBatchLanguageModel`, `GoogleBatchUpstreamTests.swift`, `GoogleGenerativeAIVideoAndInteractionsTests.swift`; 2026-11-01 delta: Docs/WeeklyUpstreamAudit20261101.json; 2026-11-08 delta: Docs/WeeklyUpstreamAudit20261108.json; 2026-11-14 delta: Docs/WeeklyUpstreamAudit20261114.json; 2026-11-15 delta: Docs/WeeklyUpstreamAudit20261115.json",
+      "evidence": "`AIProviders.google`, `GoogleGenerativeAIProvider`, `GoogleGenerativeAI.swift`, `GoogleGenerativeMediaModels.swift`, `GoogleGenerativeAITests.swift`, `GoogleGenerativeAIMediaAndToolsTests.swift`, `GoogleBatchLanguageModel`, `GoogleBatchUpstreamTests.swift`, `GoogleGenerativeAIVideoAndInteractionsTests.swift`; 2026-11-01 delta: Docs/Archive/WeeklyUpstreamAudit20261101.json; 2026-11-08 delta: Docs/Archive/WeeklyUpstreamAudit20261108.json; 2026-11-14 delta: Docs/Archive/WeeklyUpstreamAudit20261114.json; 2026-11-15 delta: Docs/Archive/WeeklyUpstreamAudit20261115.json",
       "reviewStatus": "imported-reviewed-with-gaps",
       "archiveIntegrity": "sha512-K4aC8ZTe/dXegkaE2TxD1Ln2BaNFV4iTI57BykEcoS2KjBihaC3mu+UcmNZyY5yaoBJlLVGcxPhItF32TU6fLg==",
       "sourceRef": "npm:@ai-sdk/google@4.0.121",
@@ -24,7 +24,7 @@
         "TranscriptionModelV4",
         "VideoModelV4"
       ],
-      "contractReview": "2026-11-15: published source/declarations and exact matching-release tests reviewed separately. Native delta scenarios, per-file dispositions, unchanged-catalog evidence and explicit remaining gaps are recorded in Docs/WeeklyUpstreamAudit20261115.json. Required checks remain a separate gate; no full-package/live-service parity claim."
+      "contractReview": "2026-11-15: published source/declarations and exact matching-release tests reviewed separately. Native delta scenarios, per-file dispositions, unchanged-catalog evidence and explicit remaining gaps are recorded in Docs/Archive/WeeklyUpstreamAudit20261115.json. Required checks remain a separate gate; no full-package/live-service parity claim."
     }
   ]
 }

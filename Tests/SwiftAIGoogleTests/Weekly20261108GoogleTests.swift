@@ -96,7 +96,9 @@ import SwiftAITransport
         let transport = RecordingTransport(responses: [jsonResponse(String(decoding: try encodeJSONBody(raw), as: UTF8.self)), sseResponse("data: " + String(decoding: try encodeJSONBody(raw), as: UTF8.self))])
         let model = try GoogleGenerativeAIProvider(configuration: .init(apiKey: "key", baseURL: "https://synthetic.invalid/v1beta", transport: transport)).languageModel("gemini-2.5-flash")
         let result = try await model.generate(.init(messages: [.user("x")]))
-        #expect(result.content.compactMap { part -> String? in if case let .text(text, _) = part { return "text:\(text)" }; if case let .toolCall(call) = part { return "call:\(call.name)" }; return nil } == ["text:A", "call:lookup", "text:", "text:B"])
+        #expect(result.content.compactMap { part -> String? in if case let .text(text, _) = part { return "text:\(text)" }; if case let .toolCall(call) = part { return "call:\(call.name)" }; return nil } == ["text:A", "call:lookup", "text:B"])
+        // Upstream doGenerate drops the empty signed text part and moves its signature to the previous part.
+        #expect(result.toolCalls.first?.providerMetadata["google"]?["thoughtSignature"] == "opaque")
         #expect(result.requestMetadata.url == "https://synthetic.invalid/v1beta/models/gemini-2.5-flash:generateContent")
         var parts: [LanguageStreamPart] = []
         for try await part in model.stream(.init(messages: [.user("x")])) { parts.append(part) }

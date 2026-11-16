@@ -26,9 +26,6 @@ func googleServerToolProviderMetadata(id: String, type: String, part: JSONValue)
 
 func googleInlineDataProviderMetadata(from part: JSONValue) -> [String: JSONValue] {
     var google: [String: JSONValue] = [:]
-    if part["thought"]?.boolValue == true {
-        google["thought"] = .bool(true)
-    }
     if let thoughtSignature = part["thoughtSignature"] ?? part["thought_signature"],
        thoughtSignature.stringValue != nil {
         google["thoughtSignature"] = thoughtSignature

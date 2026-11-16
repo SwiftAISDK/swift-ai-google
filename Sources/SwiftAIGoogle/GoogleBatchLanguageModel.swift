@@ -12,6 +12,10 @@ public final class GoogleBatchLanguageModel: BatchLanguageModel, @unchecked Send
     private let languageModel: GoogleGenerativeLanguageModel
     private let config: GoogleModelConfiguration
 
+    /// URLs Gemini reads directly (upstream `getSupportedUrls(modelId)`); other
+    /// prompt URLs are downloaded before the request.
+    public var supportedURLs: [String: [AISupportedURLPattern]] { languageModel.supportedURLs }
+
     init(modelID: String, config: GoogleModelConfiguration) {
         self.providerID = config.providerID
         self.modelID = modelID
@@ -714,6 +718,27 @@ private func googleBatchProviderID(from providerID: String) -> String {
         return String(providerID.dropLast(".generative-ai".count)) + ".batch"
     }
     return providerID + ".batch"
+}
+
+/// Upstream `getSupportedUrls`: Files API and YouTube URLs for every model,
+/// plus public HTTPS URLs of documented media types for Gemini models after 2.0.
+func googleLanguageModelSupportedURLs(baseURL: String, modelID: String?) -> [String: [AISupportedURLPattern]] {
+    var urls = googleBatchSupportedURLs(baseURL: baseURL)
+    let includeExternalURLs = modelID.map {
+        $0.range(of: #"(^|/)gemini-"#, options: .regularExpression) != nil
+            && $0.range(of: #"(^|/)gemini-2\.0"#, options: .regularExpression) == nil
+    } ?? true
+    guard includeExternalURLs else { return urls }
+    let https = AISupportedURLPattern { $0.hasPrefix("https://") }
+    for mediaType in [
+        "text/html", "text/css", "text/plain", "text/xml", "text/csv", "text/rtf", "text/javascript",
+        "application/json", "application/pdf",
+        "image/bmp", "image/jpeg", "image/png", "image/webp",
+        "video/mp4", "video/mpeg", "video/quicktime", "video/avi", "video/x-flv", "video/mpg", "video/webm", "video/wmv", "video/3gpp"
+    ] {
+        urls[mediaType] = [https]
+    }
+    return urls
 }
 
 private func googleBatchSupportedURLs(baseURL: String) -> [String: [AISupportedURLPattern]] {

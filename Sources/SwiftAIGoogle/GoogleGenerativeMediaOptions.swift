@@ -377,13 +377,13 @@ func googleVideoParameters(for request: VideoGenerationRequest, options: [String
     var parameters: [String: JSONValue] = [:]
     if let count = request.count {
         parameters["sampleCount"] = .number(Double(count))
-    } else if let sampleCount = options["sampleCount"] ?? options["n"] {
+    } else if let sampleCount = options["n"] {
         parameters["sampleCount"] = sampleCount
     }
     if let aspectRatio = request.aspectRatio {
         parameters["aspectRatio"] = .string(aspectRatio)
     }
-    if let resolution = request.resolution ?? options["resolution"]?.stringValue {
+    if let resolution = request.resolution {
         parameters["resolution"] = .string(googleVideoResolution(resolution))
     }
     if let duration = request.durationSeconds {
@@ -391,10 +391,10 @@ func googleVideoParameters(for request: VideoGenerationRequest, options: [String
     }
     if let seed = request.seed {
         parameters["seed"] = .number(Double(seed))
-    } else if let seed = options["seed"] {
-        parameters["seed"] = seed
     }
-    parameters.merge(googleOptionsWithoutPoll(options, excluding: ["sampleCount", "n", "resolution", "seed", "pollIntervalMs", "pollTimeoutMs", "image", "referenceImages"])) { _, new in new }
+    // Upstream passes every other provider option through and lets it win
+    // over the standard call settings (`parameters[key] = value`).
+    parameters.merge(googleOptionsWithoutPoll(options, excluding: ["n", "pollIntervalMs", "pollTimeoutMs", "image", "referenceImages"]).filter { $0.value != .null }) { _, new in new }
     return parameters
 }
 
