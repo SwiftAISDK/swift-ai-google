@@ -8,6 +8,7 @@ import SwiftAIProviderUtilities
 public final class GoogleBatchLanguageModel: BatchLanguageModel, @unchecked Sendable {
     public let providerID: String
     public let modelID: String
+    public var telemetryRedactor: AITelemetryRedactor? { googleRedactInteractionsTelemetry }
 
     private let languageModel: GoogleGenerativeLanguageModel
     private let config: GoogleModelConfiguration
@@ -49,10 +50,7 @@ public final class GoogleBatchLanguageModel: BatchLanguageModel, @unchecked Send
 
         for item in options.requests {
             try options.abortSignal?.throwIfAborted()
-            let prepared = try GoogleGenerativeLanguageModel.generateContentBody(
-                for: item.request,
-                modelID: modelID
-            )
+            let prepared = try googlePrepareTextBatchRequest(item.request, id: item.id, modelID: modelID)
             let inlineRequest: JSONValue = .object([
                 "request": prepared.body,
                 "metadata": .object(["key": .string(item.id)])
@@ -170,10 +168,7 @@ public final class GoogleBatchLanguageModel: BatchLanguageModel, @unchecked Send
             let prepared: GoogleGenerateContentPreparedCall
             switch item {
             case let .text(text):
-                prepared = try GoogleGenerativeLanguageModel.generateContentBody(
-                    for: text.request,
-                    modelID: commonModelID
-                )
+                prepared = try googlePrepareTextBatchRequest(text.request, id: text.id, modelID: commonModelID)
             case let .image(image):
                 prepared = try googlePrepareImageBatchRequest(image.request, modelID: commonModelID)
             }
@@ -793,6 +788,22 @@ private func googleProviderBatchModelID(_ requests: [AIBatchRequest]) throws -> 
         }
     }
     return modelID
+}
+
+private func googlePrepareTextBatchRequest(
+    _ request: LanguageModelRequest,
+    id: String,
+    modelID: String
+) throws -> GoogleGenerateContentPreparedCall {
+    let prepared = try GoogleGenerativeLanguageModel.generateContentBody(for: request, modelID: modelID)
+    if let schema = prepared.body["generationConfig"]?["responseJsonSchema"], schema != .null {
+        throw AIError.invalidArgument(
+            argument: "structured output schemas in Google batches",
+            message: "The Google Batch API does not reliably enforce JSON schemas (request \"\(id)\"). "
+                + "Use JSON mode without a schema, or set `providerOptions.google.structuredOutputs` to `false` and validate the results locally."
+        )
+    }
+    return prepared
 }
 
 private func googlePrepareImageBatchRequest(

@@ -43,6 +43,23 @@ public enum GoogleTools {
         ]).objectValue ?? [:])
     }
 
+    /// Connects a remote MCP server for Gemini to use through the Interactions API.
+    /// Connector header values are redacted from SDK telemetry.
+    public static func mcpServer(
+        name: String? = nil,
+        url: String? = nil,
+        headers: [String: String]? = nil,
+        allowedTools: [String]? = nil
+    ) -> JSONValue {
+        let args = JSONValue.object([
+            "name": name.map(JSONValue.string),
+            "url": url.map(JSONValue.string),
+            "headers": headers.map { .object($0.mapValues(JSONValue.string)) },
+            "allowedTools": allowedTools.map { .array($0) }
+        ])
+        return providerTool(id: "google.mcp_server", name: "mcp_server", args: args.objectValue ?? [:])
+    }
+
     static func providerTool(id: String, name: String, args: [String: JSONValue] = [:]) -> JSONValue {
         .object([
             "type": .string("provider"),
@@ -80,6 +97,16 @@ public enum GoogleVertexTools {
 
     public static func vertexRagStore(ragCorpus: String, topK: Int? = nil) -> JSONValue {
         GoogleTools.vertexRagStore(ragCorpus: ragCorpus, topK: topK)
+    }
+
+    /// Connects a remote MCP server through Vertex's Gemini Interactions API.
+    public static func mcpServer(
+        name: String? = nil,
+        url: String? = nil,
+        headers: [String: String]? = nil,
+        allowedTools: [String]? = nil
+    ) -> JSONValue {
+        GoogleTools.mcpServer(name: name, url: url, headers: headers, allowedTools: allowedTools)
     }
 }
 

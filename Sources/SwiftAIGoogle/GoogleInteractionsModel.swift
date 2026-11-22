@@ -7,6 +7,7 @@ import SwiftAIProviderUtilities
 public final class GoogleInteractionsLanguageModel: LanguageModel, @unchecked Sendable {
     public let providerID: String
     public let modelID: String
+    public var telemetryRedactor: AITelemetryRedactor? { googleRedactInteractionsTelemetry }
     private let agent: String?
     private let config: GoogleModelConfiguration
 
@@ -19,7 +20,19 @@ public final class GoogleInteractionsLanguageModel: LanguageModel, @unchecked Se
 
     public func generate(_ request: LanguageModelRequest) async throws -> TextGenerationResult {
         let prepared = try googleInteractionsPreparedCall(for: request, modelID: modelID, agent: agent, stream: false)
-        let raw = try await sendInteractions(body: .object(prepared.body), headers: request.headers, abortSignal: request.abortSignal)
+        let body = JSONValue.object(prepared.body)
+        let httpRequest = try config.request(
+            path: "/interactions",
+            modelID: modelID,
+            body: body,
+            headers: googleInteractionsHeaders(request.headers),
+            abortSignal: request.abortSignal
+        )
+        let response = try await config.transport.send(httpRequest)
+        guard (200..<300).contains(response.statusCode) else {
+            throw interactionsHTTPError(response, request: httpRequest, body: body)
+        }
+        let raw = try response.jsonValue()
         let final = try await resolvedInteraction(raw, isBackground: prepared.body["background"]?.boolValue == true, requestHeaders: request.headers, abortSignal: request.abortSignal)
         let output = googleInteractionsParsedOutput(from: final)
         guard !output.content.isEmpty else {
@@ -34,7 +47,8 @@ public final class GoogleInteractionsLanguageModel: LanguageModel, @unchecked Se
             sources: googleInteractionsSources(from: final),
             providerMetadata: googleInteractionsProviderMetadata(from: final),
             rawValue: final,
-            warnings: prepared.warnings
+            warnings: prepared.warnings,
+            requestMetadata: .init(body: body, headers: request.headers, url: httpRequest.url.absoluteString)
         )
     }
 
@@ -43,19 +57,22 @@ public final class GoogleInteractionsLanguageModel: LanguageModel, @unchecked Se
             let task = Task {
                 do {
                     let prepared = try googleInteractionsPreparedCall(for: request, modelID: modelID, agent: agent, stream: true)
+                    let body = JSONValue.object(prepared.body)
                     let httpRequest = try config.request(
                         path: "/interactions",
                         modelID: modelID,
-                        body: .object(prepared.body),
+                        body: body,
                         headers: googleInteractionsHeaders(request.headers),
                         abortSignal: request.abortSignal
                     )
                     let response = try await config.streamRequest(httpRequest)
                     guard (200..<300).contains(response.statusCode) else {
-                        throw config.httpStatusError( try await bufferedHTTPResponse(from: response, request: httpRequest))
+                        let failure = try await bufferedHTTPResponse(from: response, request: httpRequest)
+                        throw interactionsHTTPError(failure, request: httpRequest, body: body)
                     }
 
                     continuation.yield(.streamStart(warnings: prepared.warnings))
+                    continuation.yield(.requestMetadata(.init(body: body, headers: request.headers, url: httpRequest.url.absoluteString)))
                     var toolCalls = GoogleInteractionsStreamingToolCalls()
                     var content = GoogleInteractionsStreamingContent()
                     var hasFunctionCall = false
@@ -185,12 +202,12 @@ public final class GoogleInteractionsLanguageModel: LanguageModel, @unchecked Se
         }
     }
 
-    private func sendInteractions(body: JSONValue, headers: [String: String], abortSignal: AIAbortSignal?) async throws -> JSONValue {
-        let response = try await config.transport.send(config.request(path: "/interactions", modelID: modelID, body: body, headers: googleInteractionsHeaders(headers), abortSignal: abortSignal))
-        guard (200..<300).contains(response.statusCode) else {
-            throw config.httpStatusError( response)
-        }
-        return try response.jsonValue()
+    private func interactionsHTTPError(_ response: AIHTTPResponse, request: AIHTTPRequest, body: JSONValue) -> AIError {
+        let error = config.httpStatusError(response)
+        guard case var .apiCall(call) = error else { return error }
+        call.url = request.url.absoluteString
+        call.requestBody = body
+        return .apiCall(call)
     }
 
     private func resolvedInteraction(_ raw: JSONValue, isBackground: Bool, requestHeaders: [String: String], abortSignal: AIAbortSignal?) async throws -> JSONValue {

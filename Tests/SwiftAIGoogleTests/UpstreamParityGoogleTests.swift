@@ -182,7 +182,7 @@ import Testing
     @Test func customProviderNameKeepsTheSDKUserAgentSuffix() async throws {
         let transport = RecordingTransport(response: jsonResponse(#"{"candidates":[{"content":{"parts":[{"text":"x"}]},"finishReason":"STOP"}]}"#))
         _ = try await model("gemini-2.5-flash", transport: transport, name: "my-google").generate(LanguageModelRequest(messages: [.user("hi")]))
-        #expect(await transport.requests().first?.headers["user-agent"] == "ai-sdk-google/4.0.121")
+        #expect(await transport.requests().first?.headers["user-agent"] == "ai-sdk-google/4.0.124")
     }
 
     @Test func languageModelSupportedURLsMatchGetSupportedUrls() throws {

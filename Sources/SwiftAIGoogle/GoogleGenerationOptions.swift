@@ -239,7 +239,7 @@ func googleReasoningEffortMap(_ modelID: String) -> [String: String] {
     guard googleIsGemini3OrNewer(modelID), !modelID.contains("gemini-3-pro-image") else { return [:] }
     var map = ["low": "low", "medium": "medium", "high": "high"]
     if googleMinimumThinkingLevelForGemini3Model(modelID) == "minimal" { map["minimal"] = "minimal" }
-    if modelID.range(of: #"(^|[/.])gemini-4-hydrogen(?:-|$)"#, options: [.regularExpression, .caseInsensitive]) != nil {
+    if googleSupportsXhighThinking(modelID) {
         map["xhigh"] = "xhigh"
     }
     return map
@@ -247,7 +247,7 @@ func googleReasoningEffortMap(_ modelID: String) -> [String: String] {
 
 private func googleMinimumThinkingLevelForGemini3Model(_ modelID: String) -> String {
     let normalized = modelID.lowercased()
-    if normalized.range(of: #"(^|[/.])gemini-4-hydrogen(?:-|$)"#, options: .regularExpression) != nil { return "low" }
+    if googleSupportsXhighThinking(modelID) { return "low" }
     guard let range = normalized.range(of: #"(^|[/.])gemini-[^/]*$"#, options: .regularExpression) else { return "minimal" }
     let modelName = String(normalized[range]).trimmingCharacters(in: CharacterSet(charactersIn: "/."))
     if modelName == "gemini-flash-latest" {
@@ -277,6 +277,10 @@ private func googleMinimumThinkingLevelForGemini3Model(_ modelID: String) -> Str
         return "minimal"
     }
     return majorVersion > 3 || (majorVersion == 3 && minorVersion >= 7) ? "low" : "minimal"
+}
+
+private func googleSupportsXhighThinking(_ modelID: String) -> Bool {
+    modelID.range(of: #"(^|[/.])gemini-4-(?:hydrogen|neon)(?:-|$)"#, options: [.regularExpression, .caseInsensitive]) != nil
 }
 
 func googleMaxThinkingTokensForGemini25Model(_ modelID: String) -> Int {
